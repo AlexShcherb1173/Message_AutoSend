@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Рассылки{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Рассылки</h1>
+    <a class="btn btn-primary" href="{% url 'mailings:create' %}">+ Новая рассылка</a>
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>ID</th><th>Статус</th><th>Начало</th><th>Окончание</th><th></th></tr></thead>
+    <tbody>
+      {% for m in mailings %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td>{{ m.status }}</td>
+        <td>{{ m.start_at }}</td>
+        <td>{{ m.end_at }}</td>
+        <td><a href="{% url 'mailings:detail' m.id %}">Открыть</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">Пока нет рассылок</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
