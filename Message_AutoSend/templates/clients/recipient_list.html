@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Получатели — MessaceSend{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 m-0">Получатели рассылки</h1>
+  <a class="btn btn-primary" href="{% url 'clients:recipient_create' %}">Добавить</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Email</th>
+          <th>ФИО</th>
+          <th>Комментарий</th>
+          <th class="text-end">Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recipients %}
+          <tr>
+            <td><a href="{% url 'clients:recipient_detail' r.pk %}">{{ r.email }}</a></td>
+            <td>{{ r.full_name }}</td>
+            <td class="text-truncate" style="max-width: 380px;">{{ r.comment }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'clients:recipient_update' r.pk %}">Редактировать</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'clients:recipient_delete' r.pk %}">Удалить</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">Пока нет получателей</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Назад</span></li>
+    {% endif %}
+
+    <li class="page-item disabled"><span class="page-link">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Вперёд</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
