@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Просмотр сообщения — MessaceSend{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ message.subject }}</h1>
+<div class="card p-3">
+  <div class="text-muted mb-2">Создано: {{ message.created_at }} • Обновлено: {{ message.updated_at }}</div>
+  <pre class="mb-3" style="white-space: pre-wrap;">{{ message.body }}</pre>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_update' message.pk %}">Редактировать</a>
+    <a class="btn btn-outline-danger" href="{% url 'messages_app:message_delete' message.pk %}">Удалить</a>
+    <a class="btn btn-primary ms-auto" href="{% url 'messages_app:message_list' %}">К списку</a>
+  </div>
+</div>
+{% endblock %}

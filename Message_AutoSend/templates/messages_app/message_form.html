@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ view.object|default_if_none:"Новое сообщение" }} — MessaceSend{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ view.object|default_if_none:"Новое сообщение" }}</h1>
+
+<div class="card p-3">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="mb-3">
+      <label class="form-label">Тема письма</label>
+      {{ form.subject|add_class:"form-control" }}
+      {{ form.subject.errors }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Тело письма</label>
+      {{ form.body|add_class:"form-control" }}
+      {{ form.body.errors }}
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+      <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_list' %}">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
