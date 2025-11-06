@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Профиль получателя — MessageSend{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Профиль получателя</h1>
+<div class="card p-3">
+  <dl class="row mb-0">
+    <dt class="col-sm-3">Email</dt><dd class="col-sm-9">{{ recipient.email }}</dd>
+    <dt class="col-sm-3">ФИО</dt><dd class="col-sm-9">{{ recipient.full_name }}</dd>
+    <dt class="col-sm-3">Комментарий</dt><dd class="col-sm-9">{{ recipient.comment|default:"—" }}</dd>
+    <dt class="col-sm-3">Создано</dt><dd class="col-sm-9">{{ recipient.created_at }}</dd>
+    <dt class="col-sm-3">Обновлено</dt><dd class="col-sm-9">{{ recipient.updated_at }}</dd>
+  </dl>
+  <div class="mt-3 d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'clients:recipient_update' recipient.pk %}">Редактировать</a>
+    <a class="btn btn-outline-danger" href="{% url 'clients:recipient_delete' recipient.pk %}">Удалить</a>
+    <a class="btn btn-primary ms-auto" href="{% url 'clients:recipient_list' %}">К списку</a>
+  </div>
+</div>
+{% endblock %}
