@@ -11,42 +11,79 @@ from .models import Mailing, MailingLog, MailingAttempt, AttemptStatus
 
 @dataclass
 class SendResult:
+    """Результат выполнения рассылки.
+    Используется для возврата агрегированной статистики после вызова send_mailing().
+    Атрибуты:
+        total (int): Общее количество адресатов в рассылке.
+        sent (int): Количество успешно отправленных писем.
+        skipped (int): Количество пропущенных (ошибки, dry-run и т. д.)."""
     total: int
     sent: int
     skipped: int
 
 
 def _iter_emails(mailing: Mailing) -> Iterable[tuple[str, str]]:
-    """Возвращает пары (email, recipient_name) для всех получателей рассылки.
-    Правь под свои поля модели Recipient."""
+    """Генератор, возвращающий пары (email, recipient_name) для всех получателей рассылки.
+    Параметры:
+        mailing (Mailing): Экземпляр рассылки, из которого берутся связанные получатели.
+    Возвращает:
+        Iterable[tuple[str, str]]: Кортежи вида (email, name).
+    Замечание:
+        Предполагается, что модель Recipient содержит поля:
+            - email (обязательный);
+            - name или full_name (опциональный).
+        При необходимости адаптируй под собственные имена полей."""
     for r in mailing.recipients.all():
         email: Optional[str] = getattr(r, "email", None)
-        name: str = getattr(r, "name", "") or ""
+        name: str = getattr(r, "name", "") or getattr(r, "full_name", "") or ""
         if email:
             yield (email, name)
 
 
 def send_mailing(mailing: Mailing, *, user=None, dry_run: bool = False) -> SendResult:
-    """Ручная отправка рассылки по email. Можно расширить для SMS/мессенджеров.
-    - Если dry_run=True, ничего не отправляет, только считает.
-    - При успехе проставляет last_sent_at и обновляет статус."""
+    """Отправляет письма по выбранной рассылке через стандартный механизм Django.
+    Универсальная функция для ручного запуска рассылки. Поддерживает «сухой» режим
+    (dry_run) для тестирования и логирование каждой попытки через модель MailingAttempt.
+    Параметры:
+        mailing (Mailing): Экземпляр рассылки, подлежащий отправке.
+        user (Optional[Any]): Пользователь или система, инициировавшая рассылку.
+                              (Необязательный, сохраняется в логах, если требуется.)
+        dry_run (bool): Если True — письма не отправляются реально, создаются
+                        фиктивные записи о попытках с SUCCESS/DRY-RUN.
+    Поведение:
+        - Для каждого получателя извлекает email и имя (если есть).
+        - Если dry_run=True — имитирует успешные попытки без реальной отправки.
+        - Иначе вызывает send_mail() из django.core.mail, фиксируя результат.
+        - При успешной отправке хотя бы одному адресату обновляет
+          mailing.last_sent_at и актуализирует статус через refresh_status().
+        - Для каждой попытки создаёт запись в MailingAttempt (SUCCESS/FAIL).
+    Возвращает:
+        SendResult: Объект со сводными счётчиками total / sent / skipped.
+    Исключения:
+        Все исключения при отправке перехватываются и регистрируются
+        как попытки со статусом FAIL — функция не прерывает выполнение.
+    Примечания:
+        - В dev-среде можно использовать EMAIL_BACKEND =
+          'django.core.mail.backends.console.EmailBackend' для вывода писем в консоль.
+        - Предполагается, что у mailing.message есть поля subject и body."""
     recipient_emails = list(_iter_emails(mailing))
     total = len(recipient_emails)
     sent = 0
     skipped = 0
 
-    # предполагаем, что у сообщения есть поля subject/body (поправь при необходимости)
+    # Предполагаем, что у сообщения есть поля subject/body (поправь при необходимости)
     subject = getattr(mailing.message, "subject", "Рассылка")
     body = getattr(mailing.message, "body", str(mailing.message))
 
-    # если не настроен EMAIL_BACKEND — в dev-режиме можно указать 'django.core.mail.backends.console.EmailBackend'
+    # Если не настроен EMAIL_BACKEND — в dev-режиме можно указать консольный backend
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com")
 
     for email, name in recipient_emails:
         if dry_run:
+            # Фиктивная запись — без реальной отправки
             MailingAttempt.objects.create(
                 mailing=mailing,
-                status=AttemptStatus.SUCCESS,  # симулируем успешную попытку
+                status=AttemptStatus.SUCCESS,
                 server_response="DRY-RUN: письмо не отправлялось",
             )
             skipped += 1
@@ -82,7 +119,7 @@ def send_mailing(mailing: Mailing, *, user=None, dry_run: bool = False) -> SendR
                 server_response=str(exc),
             )
 
-    # отметим факт отправки хотя бы раз
+    # Отмечаем факт хотя бы одной реальной отправки
     if not dry_run and sent > 0:
         mailing.last_sent_at = timezone.now()
         mailing.refresh_status(save=True)
