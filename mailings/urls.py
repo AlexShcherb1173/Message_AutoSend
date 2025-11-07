@@ -51,4 +51,7 @@ urlpatterns = [
         views.MailingSendView.as_view(),
         name="send",
     ),
+    path(
+        "<int:pk>/send/", views.mailing_send, name="send"
+    ),
 ]

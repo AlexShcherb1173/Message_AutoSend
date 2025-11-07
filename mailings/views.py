@@ -4,6 +4,8 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib import messages
 from django.shortcuts import redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 from django.views import View
 from django.db.models import Count
 
@@ -171,3 +173,39 @@ class HomeView(TemplateView):
             unique_recipients=unique_recipients,
         )
         return ctx
+
+@require_POST
+@login_required  # убери, если проект без аутентификации
+def mailing_send(request, pk: int):
+    """
+    Ручной запуск рассылки из UI.
+    Принимает POST с опциональным чекбоксом 'dry_run'.
+
+    Поведение:
+      - dry-run: симулирует отправку, ничего реально не шлёт.
+      - normal: отправляет письма и пишет логи/attempts.
+    По завершении показывает флеш-сообщение и редиректит на detail.
+    """
+    mailing = get_object_or_404(Mailing, pk=pk)
+    dry_run = bool(request.POST.get("dry_run"))
+
+    # user передаём для аудита в логах/attempts (если сервис это поддерживает)
+    result = send_mailing(mailing, user=request.user, dry_run=dry_run)
+
+    # обновим статус «по факту»
+    mailing.refresh_status(save=True)
+
+    if dry_run:
+        messages.info(
+            request,
+            f"Тестовый запуск завершён: всего адресатов={result.total}, "
+            f"реальных отправок не производилось."
+        )
+    else:
+        messages.success(
+            request,
+            f"Рассылка отправлена: всего={result.total}, "
+            f"успешно={result.sent}, пропущено/ошибок={result.skipped}."
+        )
+
+    return redirect("mailings:detail", pk=mailing.pk)
