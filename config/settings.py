@@ -1,44 +1,62 @@
 """
-settings.py — основные настройки проекта Message_AutoSend.
-Содержит конфигурацию Django: базы данных, установленные приложения,
-пути к шаблонам, статику, медиафайлы, локализацию и параметры безопасности.
-⚠️ Внимание:
-    Этот файл предназначен для локальной разработки (DEBUG=True).
-    Перед деплоем на сервер:
-        • установи DEBUG = False;
-        • задай ALLOWED_HOSTS;
-        • перенеси SECRET_KEY в .env;
-        • настрой EMAIL_BACKEND и базу данных.
+settings.py — конфигурация проекта Message_AutoSend.
+Читает переменные из .env (python-dotenv). Готово к PostgreSQL и SMTP.
+
+Перед продакшеном:
+  • DEBUG=False
+  • задайте SECRET_KEY и ALLOWED_HOSTS
+  • заполните SMTP-параметры
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
-# === ОСНОВНЫЕ ПУТИ ============================================================
-BASE_DIR = Path(__file__).resolve().parent.parent  # корень проекта
+# === БАЗОВЫЕ ПУТИ ============================================================
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+# === .ENV ====================================================================
+load_dotenv(BASE_DIR / ".env")
 
-# === БЕЗОПАСНОСТЬ =============================================================
-SECRET_KEY = "django-insecure-(u*qr^las*2v-rm*x^^&8$e#!qj9f)8z#1+^ov$78v#g&gbb)o"
-DEBUG = True
-ALLOWED_HOSTS: list[str] = []
+def env_clean(name: str, default: str = "") -> str:
+    s = os.getenv(name, default)
+    if s is None:
+        return default
+    # убрать неразрывные/нулевые пробелы и лишние кавычки
+    return (
+        s.replace("\u00A0", " ")
+         .replace("\u200B", "")
+         .strip()
+         .strip('"')
+         .strip("'")
+    )
 
+def env_bool(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in {"1", "true", "yes", "on"}
+
+# === БЕЗОПАСНОСТЬ ============================================================
+SECRET_KEY = env_clean("SECRET_KEY", "change-me-dev-secret")
+DEBUG = env_bool("DEBUG", False)
+ALLOWED_HOSTS = [h.strip() for h in env_clean("ALLOWED_HOSTS","").split(",") if h.strip()]
 
 # === ПРИЛОЖЕНИЯ ===============================================================
 INSTALLED_APPS = [
-    # Системные приложения Django
+    # Системные
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # Пользовательские приложения проекта
-    "clients",        # управление получателями
-    "messages_app",   # шаблоны сообщений
-    "mailings",       # рассылки и лог отправок
+    # Пользовательские
+    "clients",
+    "messages_app",
+    "mailings",
+    "widget_tweaks",
 ]
-
 
 # === MIDDLEWARE ===============================================================
 MIDDLEWARE = [
@@ -51,12 +69,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
-# === URL-КОНФИГУРАЦИЯ ==========================================================
+# === URL / ШАБЛОНЫ / WSGI ====================================================
 ROOT_URLCONF = "config.urls"
 
-
-# === ШАБЛОНЫ ==================================================================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -72,19 +87,29 @@ TEMPLATES = [
     },
 ]
 
-
-# === WSGI-ПРИЛОЖЕНИЕ ==========================================================
 WSGI_APPLICATION = "config.wsgi.application"
 
+# === БАЗА ДАННЫХ (PostgreSQL) ================================================
+# DB_* берём из .env (см. ниже пример .env)
+DB_NAME = env_clean("DB_NAME", "message_autosend")
+DB_USER = env_clean("DB_USER", "postgres")
+DB_PASSWORD = env_clean("DB_PASSWORD", "postgres")
+DB_HOST = env_clean("DB_HOST", "localhost")
+try:
+    DB_PORT = int(env_clean("DB_PORT", "5432"))
+except ValueError:
+    DB_PORT = 5432
 
-# === БАЗА ДАННЫХ ==============================================================
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": DB_NAME,
+        "USER": DB_USER,
+        "PASSWORD": DB_PASSWORD,
+        "HOST": DB_HOST,
+        "PORT": DB_PORT,
     }
 }
-
 
 # === ВАЛИДАЦИЯ ПАРОЛЕЙ =======================================================
 AUTH_PASSWORD_VALIDATORS = [
@@ -94,37 +119,35 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 # === ЛОКАЛИЗАЦИЯ ==============================================================
-LANGUAGE_CODE = "en-us"   # Можно заменить на 'ru'
-TIME_ZONE = "UTC"         # Например: 'Europe/Moscow'
+LANGUAGE_CODE = env_clean("LANGUAGE_CODE", "en-us")
+TIME_ZONE = env_clean("TIME_ZONE", "UTC")
 USE_I18N = True
 USE_TZ = True
 
-
 # === СТАТИКА И МЕДИА ==========================================================
-# --- Статические файлы ---
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"   # куда collectstatic будет собирать файлы
-STATICFILES_DIRS: list[Path] = []        # дополнительные каталоги с локальной статикой
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS: list[Path] = []  # например: [BASE_DIR / "static"]
 
-# --- Медиафайлы (загрузки пользователей) ---
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"          # каталог для хранения загружаемых файлов
+MEDIA_ROOT = BASE_DIR / "media"
 
+# === ПОЧТА (SMTP) =============================================================
+# Стандартная SMTP-схема: укажи EMAIL_BACKEND, EMAIL_HOST, EMAIL_PORT и т.д.
+EMAIL_BACKEND = env_clean("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env_clean("EMAIL_HOST", "smtp.example.com")
+try:
+    EMAIL_PORT = int(env_clean("EMAIL_PORT", "587"))
+except ValueError:
+    EMAIL_PORT = 587
+EMAIL_HOST_USER = env_clean("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env_clean("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 
-# === ПОЧТА ===================================================================
-# Для рассылок и уведомлений
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "no-reply@example.com"
-# Для боевого режима:
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_HOST = "smtp.yourprovider.com"
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = "user@example.com"
-# EMAIL_HOST_PASSWORD = "secure-password"
-
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@example.com")
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", DEFAULT_FROM_EMAIL)  # отправитель системных ошибок
 
 # === ПРОЧЕЕ ==================================================================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

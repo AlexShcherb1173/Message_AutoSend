@@ -1,30 +1,41 @@
 {% extends "base.html" %}
-{% block title %}{{ view.object|default_if_none:"Новый получатель" }} — MessaceSend{% endblock %}
+{% load widget_tweaks %}
+{# Исправлена опечатка MessaceSend → MessageSend #}
+{% block title %}{{ view.object|default_if_none:"Новый получатель" }} — MessageSend{% endblock %}
+
 {% block content %}
 <h1 class="h3 mb-3">{{ view.object|default_if_none:"Новый получатель" }}</h1>
 
 <div class="card p-3">
   <form method="post" novalidate>
     {% csrf_token %}
+
+    {# Ошибки формы не привязанные к полям #}
     {{ form.non_field_errors }}
+
     <div class="mb-3">
       <label class="form-label">Email</label>
       {{ form.email|add_class:"form-control" }}
       {{ form.email.errors }}
     </div>
+
     <div class="mb-3">
       <label class="form-label">ФИО</label>
       {{ form.full_name|add_class:"form-control" }}
       {{ form.full_name.errors }}
     </div>
+
     <div class="mb-3">
       <label class="form-label">Комментарий</label>
       {{ form.comment|add_class:"form-control" }}
       {{ form.comment.errors }}
     </div>
+
     <div class="d-flex gap-2">
       <button class="btn btn-primary" type="submit">Сохранить</button>
       <a class="btn btn-outline-secondary" href="{% url 'clients:recipient_list' %}">Отмена</a>
+      {# ↩ На главную #}
+      <a class="btn btn-link" href="{% url 'index' %}">На главную</a>
     </div>
   </form>
 </div>

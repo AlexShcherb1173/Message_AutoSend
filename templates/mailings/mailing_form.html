@@ -1,33 +1,45 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% block title %}{{ view.object|default_if_none:'Новая рассылка' }}{% endblock %}
+
 {% block content %}
 <div class="container py-4">
   <h1>{{ view.object|default_if_none:'Новая рассылка' }}</h1>
+
   <form method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
+
     <div class="mb-3">
       <label class="form-label">Начало</label>
       {{ form.start_at }}
       {{ form.start_at.errors }}
     </div>
+
     <div class="mb-3">
       <label class="form-label">Окончание</label>
       {{ form.end_at }}
       {{ form.end_at.errors }}
     </div>
+
     <div class="mb-3">
       <label class="form-label">Сообщение</label>
       {{ form.message }}
       {{ form.message.errors }}
     </div>
+
     <div class="mb-3">
       <label class="form-label">Получатели</label>
       {{ form.recipients }}
       {{ form.recipients.errors }}
     </div>
-    <button class="btn btn-primary" type="submit">Сохранить</button>
-    <a class="btn btn-link" href="{% url 'mailings:list' %}">Отмена</a>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+      <a class="btn btn-link" href="{% url 'mailings:list' %}">Отмена</a>
+      {# ↩ На главную #}
+      <a class="btn btn-outline-secondary" href="{% url 'index' %}">На главную</a>
+    </div>
   </form>
 </div>
 {% endblock %}

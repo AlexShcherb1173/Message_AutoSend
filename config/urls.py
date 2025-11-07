@@ -12,6 +12,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 from mailings.views import HomeView
 
 #: Корневые маршруты проекта Message_AutoSend.
@@ -30,7 +31,7 @@ urlpatterns = [
     path("mailings/", include("mailings.urls")),
     path("clients/", include("clients.urls")),
     path("messages_app/", include("messages_app.urls")),
-    path("", HomeView.as_view(), name="home"),
+    path("", TemplateView.as_view(template_name="index.html"), name="index"),
 ]
 
 # === Раздача медиа и статики при DEBUG ========================================

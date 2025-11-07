@@ -1,0 +1,32 @@
+[
+  {
+    "model": "messages_app.message",
+    "pk": 1,
+    "fields": {
+      "subject": "Добро пожаловать!",
+      "body": "Спасибо за подписку на нашу рассылку.",
+      "created_at": "2025-10-02T08:00:00Z",
+      "updated_at": "2025-10-02T08:00:00Z"
+    }
+  },
+  {
+    "model": "messages_app.message",
+    "pk": 2,
+    "fields": {
+      "subject": "Новости недели",
+      "body": "Свежие обновления продукта и полезные ссылки.",
+      "created_at": "2025-10-03T08:00:00Z",
+      "updated_at": "2025-10-03T08:00:00Z"
+    }
+  },
+  {
+    "model": "messages_app.message",
+    "pk": 3,
+    "fields": {
+      "subject": "Спецпредложение",
+      "body": "Скидка 20% на подписку до конца месяца.",
+      "created_at": "2025-10-04T08:00:00Z",
+      "updated_at": "2025-10-04T08:00:00Z"
+    }
+  }
+]

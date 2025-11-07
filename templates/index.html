@@ -5,6 +5,7 @@
 <div class="container py-4">
   <h1 class="mb-4">Панель рассылок</h1>
 
+  {# Статкарточки #}
   <div class="row g-3">
     <div class="col-12 col-md-4">
       <div class="card shadow-sm h-100">
@@ -45,6 +46,7 @@
 
   <hr class="my-4">
 
+  {# Быстрые действия #}
   <div class="d-flex gap-2">
     <a class="btn btn-primary" href="{% url 'mailings:create' %}">+ Новая рассылка</a>
     <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_create' %}">+ Новое сообщение</a>
