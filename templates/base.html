@@ -23,6 +23,15 @@
       <a class="nav-link" href="{% url 'mailings:list' %}">Рассылки</a>
       <a class="nav-link" href="{% url 'messages_app:message_list' %}">Сообщения</a>
     </div>
+    <div class="navbar-nav">
+      {% if request.user.is_authenticated %}
+        <a class="nav-link" href="{% url 'users:profile' %}">{{ request.user.email }}</a>
+        <a class="nav-link" href="{% url 'users:logout' %}">Выход</a>
+      {% else %}
+        <a class="nav-link" href="{% url 'users:login' %}">Вход</a>
+        <a class="nav-link" href="{% url 'users:signup' %}">Регистрация</a>
+      {% endif %}
+    </div>
   </div>
 </nav>
 

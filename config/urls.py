@@ -28,6 +28,7 @@ from mailings.views import HomeView
 #: └────────────────────────────┴──────────────────────────────────────┴─────────────────────────────┘
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("users/", include(("users.urls", "users"), namespace="users")),
     path("mailings/", include("mailings.urls")),
     path("clients/", include("clients.urls")),
     path("messages_app/", include("messages_app.urls")),

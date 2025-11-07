@@ -37,6 +37,8 @@ def env_bool(name: str, default: bool = False) -> bool:
         return default
     return val.strip().lower() in {"1", "true", "yes", "on"}
 
+AUTH_USER_MODEL = "users.User"
+
 # === БЕЗОПАСНОСТЬ ============================================================
 SECRET_KEY = env_clean("SECRET_KEY", "change-me-dev-secret")
 DEBUG = env_bool("DEBUG", False)
@@ -51,7 +53,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     # Пользовательские
+    "users",
     "clients",
     "messages_app",
     "mailings",
@@ -151,3 +155,10 @@ SERVER_EMAIL = os.getenv("SERVER_EMAIL", DEFAULT_FROM_EMAIL)  # отправит
 
 # === ПРОЧЕЕ ==================================================================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGIN_URL = "users:login"
+LOGIN_REDIRECT_URL = "index"
+LOGOUT_REDIRECT_URL = "index"
+
+SITE_ID = 1
+
