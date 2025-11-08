@@ -1,211 +1,216 @@
 from __future__ import annotations
 
-from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib import messages
-from django.shortcuts import redirect, get_object_or_404
-from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.db.models import Count, Q
+from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse_lazy
 from django.views import View
-from django.db.models import Count
+from django.views.decorators.http import require_POST
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 
 from .forms import MailingForm
-from .models import Mailing, MailingStatus
+from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 from .services import send_mailing
 from clients.models import Recipient
 
 
-class MailingListView(ListView):
+# ===== Миксины ограничения доступа (владельцы/менеджеры) =====
+
+class OwnerFilteredQuerysetMixin(LoginRequiredMixin):
     """
-    Представление списка рассылок.
-
-    Отображает все объекты модели Mailing с пагинацией и
-    поддержкой фильтрации по статусу через GET-параметр `status`.
-
-    Пример: /mailings/?status=Запущена
-
-    Атрибуты:
-        model (Model): Модель рассылки.
-        paginate_by (int): Количество элементов на странице.
-        template_name (str): Шаблон для отображения списка.
-        context_object_name (str): Имя переменной в контексте шаблона.
+    Ограничивает queryset объектами текущего пользователя.
+    Если у пользователя есть perm 'mailings.view_all_mailings' — он видит все.
     """
+    view_all_permission = "mailings.view_all_mailings"
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.has_perm(self.view_all_permission) or user.is_superuser:
+            return qs
+        return qs.filter(owner=user)
+
+
+class OwnerOnlyMutationMixin(UserPassesTestMixin):
+    """
+    Разрешает изменение/удаление только владельцу (или суперпользователю).
+    Менеджер видит всё, но менять/удалять чужое не может.
+    """
+    def test_func(self):
+        obj = self.get_object()
+        u = self.request.user
+        return u.is_superuser or (obj.owner_id == u.id)
+
+
+# ===== CRUD + отчёты =====
+
+class MailingListView(OwnerFilteredQuerysetMixin, ListView):
+    """
+    Список рассылок с фильтрацией по владельцу/статусу и аннотациями статистики.
+    """
     model = Mailing
     paginate_by = 20
     template_name = "mailings/mailing_list.html"
     context_object_name = "mailings"
 
     def get_queryset(self):
-        """
-        Возвращает QuerySet рассылок, опционально фильтруя по статусу.
-
-        Returns:
-            QuerySet: Список рассылок (возможно отфильтрованный).
-        """
-        qs = super().get_queryset()
+        qs = super().get_queryset().with_stats()
         status = self.request.GET.get("status")
         if status:
             qs = qs.filter(status=status)
-        return qs
+        return qs.select_related("message").prefetch_related("recipients")
 
 
-class MailingDetailView(DetailView):
-    """Представление для просмотра подробной информации о рассылке.
-    Атрибуты:
-        model (Model): Модель рассылки.
-        template_name (str): Шаблон страницы деталей.
-        context_object_name (str): Имя переменной в контексте."""
-
+class MailingDetailView(OwnerFilteredQuerysetMixin, DetailView):
+    """
+    Детали рассылки (только для владельца/менеджера/суперадмина) + словарь stats.
+    """
     model = Mailing
     template_name = "mailings/mailing_detail.html"
     context_object_name = "mailing"
 
+    def get_queryset(self):
+        return super().get_queryset().with_stats()
 
-class MailingCreateView(CreateView):
-    """Представление для создания новой рассылки.
-    После успешного сохранения пересчитывает статус,
-    чтобы гарантировать корректное начальное состояние."""
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["stats"] = self.object.stats_dict()
+        return ctx
 
+
+class MailingCreateView(LoginRequiredMixin, CreateView):
+    """
+    Создание рассылки: владелец = текущий пользователь.
+    """
     model = Mailing
     form_class = MailingForm
     template_name = "mailings/mailing_form.html"
     success_url = reverse_lazy("mailings:list")
 
     def form_valid(self, form):
-        """Обрабатывает успешную валидацию формы.
-        Пересчитывает статус рассылки (refresh_status) после сохранения.
-        Args:
-            form (MailingForm): Валидная форма.
-        Returns:
-            HttpResponseRedirect: Перенаправление на success_url."""
-        response = super().form_valid(form)
-        self.object.refresh_status(save=True)
-        return response
+        obj = form.save(commit=False)
+        obj.owner = self.request.user  # <— записываем владельца
+        obj.save()
+        form.save_m2m()
+        obj.refresh_status(save=True)
+        return redirect(self.success_url)
 
 
-class MailingUpdateView(UpdateView):
-    """Представление для редактирования существующей рассылки.
-    После обновления формы пересчитывает статус с учётом новых дат."""
-
+class MailingUpdateView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, UpdateView):
+    """Редактирование только своей рассылки."""
     model = Mailing
     form_class = MailingForm
     template_name = "mailings/mailing_form.html"
     success_url = reverse_lazy("mailings:list")
 
     def form_valid(self, form):
-        """Обрабатывает успешное обновление данных рассылки.
-            Args:
-            form (MailingForm): Валидная форма с изменёнными полями.
-        Returns:
-            HttpResponseRedirect: Перенаправление на success_url."""
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         self.object.refresh_status(save=True)
-        return response
+        return resp
 
 
-class MailingDeleteView(DeleteView):
-    """Представление для удаления рассылки.
-    Отображает страницу подтверждения удаления и после подтверждения
-    удаляет объект, перенаправляя на список рассылок."""
-
+class MailingDeleteView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, DeleteView):
+    """Удаление только своей рассылки."""
     model = Mailing
     template_name = "mailings/mailing_confirm_delete.html"
     success_url = reverse_lazy("mailings:list")
 
 
-class MailingSendView(View):
-    """Представление для ручного запуска рассылки из пользовательского интерфейса.
-    Работает только с POST-запросами.
-    Использует сервис send_mailing() для фактической отправки
-    (или симуляции — dry-run).
-    POST-параметры:
-        dry_run (str): Если "1", выполняется имитация отправки без реальных писем."""
-
+class MailingSendView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, View):
+    """
+    Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю).
+    Менеджер видит карточку, но не отправляет.
+    """
     def post(self, request, pk: int):
-        """Обрабатывает POST-запрос на запуск рассылки.
-        Args:
-            request (HttpRequest): Запрос от клиента.
-            pk (int): ID рассылки, которую нужно отправить.
-        Returns:
-            HttpResponseRedirect: Перенаправление на страницу деталей рассылки."""
         mailing = get_object_or_404(Mailing, pk=pk)
+        # OwnerOnlyMutationMixin защитит от чужих действий
         dry_run = request.POST.get("dry_run") == "1"
         result = send_mailing(mailing, user=request.user, dry_run=dry_run)
-
+        mailing.refresh_status(save=True)
         if dry_run:
-            messages.info(
-                request,
-                f"DRY-RUN: получателей={result.total}, бы отправили={result.total}, реально отправлено=0.",
-            )
+            messages.info(request, f"DRY-RUN: всего={result.total}, отправлено=0, пропущено={result.skipped}.")
         else:
-            messages.success(
-                request,
-                f"Готово: всего={result.total}, отправлено={result.sent}, пропущено/ошибок={result.skipped}.",
-            )
+            messages.success(request, f"Готово: всего={result.total}, отправлено={result.sent}, пропущено={result.skipped}.")
         return redirect("mailings:detail", pk=mailing.pk)
 
 
-class HomeView(TemplateView):
-    """Главная страница приложения.
-    Отображает агрегированные показатели:
-        - общее количество рассылок;
-        - количество активных рассылок (со статусом 'Запущена');
-        - количество уникальных получателей, участвующих в рассылках."""
-
-    template_name = "index.html"
+class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
+    """
+    Страница отчётов.
+    Пользователь видит только свои данные, менеджер/суперадмин — сводку по всем.
+    """
+    template_name = "mailings/mailing_stats.html"
 
     def get_context_data(self, **kwargs):
-        """Добавляет в контекст сводные статистические данные по рассылкам и получателям.
-        Returns:
-            dict: Контекст с полями total_mailings, active_mailings, unique_recipients."""
         ctx = super().get_context_data(**kwargs)
+        user = self.request.user
 
-        total_mailings = Mailing.objects.count()
-        active_mailings = Mailing.objects.filter(status=MailingStatus.RUNNING).count()
+        mailings_qs = Mailing.objects.all()
+        attempts_qs = MailingAttempt.objects.all()
 
-        # Уникальные получатели, участвующие хотя бы в одной рассылке
-        unique_recipients = Recipient.objects.filter(mailings__isnull=False).distinct().count()
+        if not (user.has_perm("mailings.view_all_mailings") or user.is_superuser):
+            mailings_qs = mailings_qs.filter(owner=user)
+            attempts_qs = attempts_qs.filter(mailing__owner=user)
+
+        total_mailings = mailings_qs.count()
+        attempts_total = attempts_qs.count()
+        attempts_ok = attempts_qs.filter(status=AttemptStatus.SUCCESS).count()
+        attempts_fail = attempts_qs.filter(status=AttemptStatus.FAIL).count()
 
         ctx.update(
             total_mailings=total_mailings,
-            active_mailings=active_mailings,
-            unique_recipients=unique_recipients,
+            attempts_total=attempts_total,
+            attempts_ok=attempts_ok,
+            attempts_fail=attempts_fail,
         )
+
+        # Дополнительно (как в stats шаблоне): построчная статистика по рассылкам
+        mailings = (
+            mailings_qs
+            .annotate(
+                stat_sent_messages=Count("logs", filter=Q(logs__status="SENT")),
+                stat_failed_messages=Count("logs", filter=Q(logs__status="ERROR")),
+                stat_attempt_success=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
+                stat_attempt_fail=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
+            )
+            .select_related("message")
+            .prefetch_related("recipients")
+        )
+        ctx["mailings"] = mailings
         return ctx
 
+
+# Доп. функционал для менеджеров: «отключить» рассылку (права required)
+class MailingDisableView(PermissionRequiredMixin, View):
+    """
+    Принудительно завершить рассылку (для менеджеров/админов).
+    Требуется perm: 'mailings.disable_mailing'.
+    """
+    permission_required = "mailings.disable_mailing"
+
+    def post(self, request, pk: int):
+        mailing = get_object_or_404(Mailing, pk=pk)
+        mailing.status = MailingStatus.FINISHED
+        mailing.save(update_fields=["status", "updated_at"])
+        messages.warning(request, f"Рассылка #{mailing.pk} принудительно завершена.")
+        return redirect("mailings:detail", pk=mailing.pk)
+
+
+# Вспомогательная функция (если используешь ручной POST-эндпойнт)
 @require_POST
-@login_required  # убери, если проект без аутентификации
+@login_required
 def mailing_send(request, pk: int):
-    """
-    Ручной запуск рассылки из UI.
-    Принимает POST с опциональным чекбоксом 'dry_run'.
-
-    Поведение:
-      - dry-run: симулирует отправку, ничего реально не шлёт.
-      - normal: отправляет письма и пишет логи/attempts.
-    По завершении показывает флеш-сообщение и редиректит на detail.
-    """
     mailing = get_object_or_404(Mailing, pk=pk)
+    if mailing.owner_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, "Вы не можете отправлять чужую рассылку.")
+        return redirect("mailings:detail", pk=mailing.pk)
     dry_run = bool(request.POST.get("dry_run"))
-
-    # user передаём для аудита в логах/attempts (если сервис это поддерживает)
     result = send_mailing(mailing, user=request.user, dry_run=dry_run)
-
-    # обновим статус «по факту»
     mailing.refresh_status(save=True)
-
     if dry_run:
-        messages.info(
-            request,
-            f"Тестовый запуск завершён: всего адресатов={result.total}, "
-            f"реальных отправок не производилось."
-        )
+        messages.info(request, f"Тестовый запуск завершён: адресатов={result.total}, реальных отправок нет.")
     else:
-        messages.success(
-            request,
-            f"Рассылка отправлена: всего={result.total}, "
-            f"успешно={result.sent}, пропущено/ошибок={result.skipped}."
-        )
-
+        messages.success(request, f"Рассылка отправлена: всего={result.total}, успешно={result.sent}, ошибок={result.skipped}.")
     return redirect("mailings:detail", pk=mailing.pk)

@@ -1,14 +1,28 @@
+from __future__ import annotations
+
+from django.conf import settings
 from django.db import models
 from django.core.validators import MinLengthValidator
 
 
 class Recipient(models.Model):
-    """Модель получателя рассылки.
-
-    Представляет человека или организацию, которым отправляются сообщения.
-    Содержит уникальный email, Ф. И. О. и необязательный комментарий.
-    Используется для формирования списка адресатов при запуске рассылок.
     """
+    Получатель рассылки (клиент).
+    Поле owner — владелец клиента; ограничения по владельцу.
+
+    Храним:
+      • email (уникальный),
+      • полное имя (full_name),
+      • комментарий (comment).
+    """
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="recipients",
+        verbose_name="Владелец",
+        help_text="Пользователь-владелец карточки клиента.",
+    )
 
     email = models.EmailField(
         "Email",
@@ -27,27 +41,22 @@ class Recipient(models.Model):
         help_text="Дополнительная информация о получателе (необязательно).",
     )
 
-    created_at = models.DateTimeField(
-        "Создано",
-        auto_now_add=True,
-        help_text="Дата и время создания записи.",
-    )
-    updated_at = models.DateTimeField(
-        "Обновлено",
-        auto_now=True,
-        help_text="Дата и время последнего обновления записи.",
-    )
+    created_at = models.DateTimeField("Создано", auto_now_add=True, help_text="Дата и время создания записи.")
+    updated_at = models.DateTimeField("Обновлено", auto_now=True, help_text="Дата и время последнего обновления записи.")
 
     class Meta:
-        """Метаданные модели Recipient."""
-        verbose_name = "Получатель рассылки"
-        verbose_name_plural = "Получатели рассылки"
-        ordering = ("full_name", "email")  # удобнее просматривать в алфавитном порядке
+        verbose_name = "Получатель"
+        verbose_name_plural = "Получатели"
+        ordering = ("full_name", "email")
         indexes = [
+            models.Index(fields=["owner"], name="idx_recipient_owner"),
             models.Index(fields=["email"], name="idx_recipient_email"),
             models.Index(fields=["full_name"], name="idx_recipient_fullname"),
             models.Index(fields=["-created_at"], name="idx_recipient_created_desc"),
         ]
+        permissions = (
+            ("view_all_recipients", "Может просматривать всех получателей"),
+        )
 
     def clean(self):
         """Нормализация данных перед валидацией/сохранением."""
@@ -57,6 +66,5 @@ class Recipient(models.Model):
             self.full_name = self.full_name.strip()
 
     def __str__(self) -> str:
-        """Строковое представление в формате: «Ф. И. О. <email>»."""
         name = (self.full_name or "").strip()
         return f"{name} <{self.email}>".strip() if name else self.email

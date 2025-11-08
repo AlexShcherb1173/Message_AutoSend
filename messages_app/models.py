@@ -1,14 +1,23 @@
+from __future__ import annotations
+
+from django.conf import settings
 from django.db import models
 from django.core.validators import MinLengthValidator
 
 
 class Message(models.Model):
-    """Модель сообщения, используемого в рассылках.
-
-    Содержит тему (subject) и текст письма (body), которые используются
-    при формировании контента рассылки. Каждое сообщение может быть
-    связано с одной или несколькими рассылками.
     """
+    Шаблон письма для рассылок.
+    Поле owner — кто создал сообщение; ограничение доступа по владельцу.
+    """
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="messages_owned",
+        verbose_name="Владелец",
+        help_text="Пользователь-владелец шаблона сообщения.",
+    )
 
     subject = models.CharField(
         "Тема письма",
@@ -17,7 +26,7 @@ class Message(models.Model):
         help_text="Короткий заголовок сообщения (отображается в поле Subject).",
     )
     body = models.TextField(
-        "Тело письма",
+        "Текст письма",
         help_text="Основное содержимое письма в свободной форме.",
     )
 
@@ -25,20 +34,18 @@ class Message(models.Model):
     updated_at = models.DateTimeField("Обновлено", auto_now=True)
 
     class Meta:
-        """Метаданные модели Message."""
         verbose_name = "Сообщение"
         verbose_name_plural = "Сообщения"
         ordering = ("-created_at",)
         indexes = [
+            models.Index(fields=["owner"], name="idx_message_owner"),
             models.Index(fields=["-created_at"], name="idx_msg_created_desc"),
             models.Index(fields=["subject"], name="idx_msg_subject"),
         ]
+        permissions = (
+            ("view_all_messages", "Может просматривать все сообщения"),
+        )
 
     def __str__(self) -> str:
-        """Возвращает короткое представление сообщения: тема (до 80 символов).
-
-        Если тема пуста (необычно, но возможно при прямых операциях с БД),
-        вернёт «(без темы)».
-        """
         subj = (self.subject or "").strip()
-        return (subj[:80] if subj else "(без темы)")
+        return subj[:80] if subj else "(без темы)"

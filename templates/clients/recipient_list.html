@@ -28,8 +28,12 @@
             <td>{{ r.full_name }}</td>
             <td class="text-truncate" style="max-width: 380px;">{{ r.comment }}</td>
             <td class="text-end">
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'clients:recipient_edit' r.pk %}">Редактировать</a>
-              <a class="btn btn-sm btn-outline-danger" href="{% url 'clients:recipient_delete' r.pk %}">Удалить</a>
+              {% if request.user.is_authenticated and r.owner_id == request.user.id or request.user.is_superuser %}
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'clients:recipient_edit' r.pk %}">Редактировать</a>
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'clients:recipient_delete' r.pk %}">Удалить</a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
             </td>
           </tr>
         {% empty %}
@@ -40,7 +44,6 @@
   </div>
 </div>
 
-{# Пагинация #}
 {% if is_paginated %}
 <nav class="mt-3">
   <ul class="pagination mb-0">

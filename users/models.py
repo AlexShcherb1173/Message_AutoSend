@@ -50,40 +50,42 @@ class CustomUserManager(BaseUserManager):
       - username формируется автоматически (если не указан).
     """
 
-    def _create_user(self, email, password=None, **extra_fields):
-        """Создаёт обычного пользователя с обязательным email."""
-        if not email:
-            raise ValueError("У пользователя должен быть указан email")
+    def _create_user(self, email: str, password: str | None, **extra_fields):
+        """Базовый конструктор пользователя.
 
+        Args:
+            email: адрес, будет логином (уникальный).
+            password: пароль (может быть None для инвайтов).
+            extra_fields: прочие поля модели.
+
+        Raises:
+            ValueError: если email не указан.
+        """
+        if not email:
+            raise ValueError("Нужно указать email")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        user.full_clean()
         user.save(using=self._db)
         return user
 
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email: str, password: str | None = None, **extra_fields):
+        """Обычный пользователь: не staff, не superuser."""
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
-        # Активируем после подтверждения e-mail
-        extra_fields.setdefault("is_active", False)
         return self._create_user(email, password, **extra_fields)
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        """Создаёт суперпользователя с расширенными правами."""
+    def create_superuser(self, email: str, password: str | None, **extra_fields):
+        """Суперпользователь: staff + superuser."""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_active", True)
 
-        if not email:
-            raise ValueError("У суперпользователя должен быть email")
         if extra_fields.get("is_staff") is not True:
-            raise ValueError("Суперпользователь должен иметь is_staff=True")
+            raise ValueError("Superuser должен иметь is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Суперпользователь должен иметь is_superuser=True")
+            raise ValueError("Superuser должен иметь is_superuser=True.")
 
-        return self.create_user(email, password, **extra_fields)
-
+        return self._create_user(email, password, **extra_fields)
 
 # ============================================================
 #                    МОДЕЛЬ ПОЛЬЗОВАТЕЛЯ
@@ -109,16 +111,12 @@ class User(AbstractUser):
             - country (CharField)
     """
 
-    username = models.CharField(
-        _("Имя пользователя"),
-        max_length=150,
-        unique=True,
-        help_text=_("Можно использовать для отображения профиля."),
-    )
+    username = None
 
     email = models.EmailField(
         _("Email"),
         unique=True,
+        db_index=True,
         help_text=_("Используется для входа в систему."),
     )
 
@@ -149,13 +147,14 @@ class User(AbstractUser):
 
     # Используем email как логин
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS: list[str] = []
 
     objects = CustomUserManager()
 
     class Meta:
         verbose_name = _("Пользователь")
         verbose_name_plural = _("Пользователи")
+        ordering = ("-date_joined",)
 
     def __str__(self) -> str:
         """Возвращает читаемое представление пользователя."""

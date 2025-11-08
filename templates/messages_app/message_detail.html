@@ -9,10 +9,11 @@
   <pre class="mb-3" style="white-space: pre-wrap;">{{ message.body }}</pre>
 
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_update' message.pk %}">Редактировать</a>
-    <a class="btn btn-outline-danger" href="{% url 'messages_app:message_delete' message.pk %}">Удалить</a>
+    {% if request.user.is_authenticated and (message.owner_id == request.user.id or request.user.is_superuser) %}
+      <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_update' message.pk %}">Редактировать</a>
+      <a class="btn btn-outline-danger" href="{% url 'messages_app:message_delete' message.pk %}">Удалить</a>
+    {% endif %}
     <a class="btn btn-primary ms-auto" href="{% url 'messages_app:message_list' %}">К списку</a>
-    {# ↩ На главную #}
     <a class="btn btn-link" href="{% url 'index' %}">На главную</a>
   </div>
 </div>

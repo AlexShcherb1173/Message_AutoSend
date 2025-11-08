@@ -13,7 +13,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from mailings.views import HomeView
+
 
 #: Корневые маршруты проекта Message_AutoSend.
 #:
@@ -28,6 +28,7 @@ from mailings.views import HomeView
 #: └────────────────────────────┴──────────────────────────────────────┴─────────────────────────────┘
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", include("django.contrib.auth.urls")),
     path("users/", include(("users.urls", "users"), namespace="users")),
     path("mailings/", include("mailings.urls")),
     path("clients/", include("clients.urls")),

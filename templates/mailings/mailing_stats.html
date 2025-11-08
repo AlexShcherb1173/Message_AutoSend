@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Отчёты по рассылкам{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Отчёты по рассылкам</h1>
+
+  <!-- ИТОГОВЫЕ КАРТОЧКИ -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold text-secondary">Отправлено</div>
+          <div class="display-6">{{ total_sent }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold text-secondary">Ошибок</div>
+          <div class="display-6">{{ total_failed }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold text-secondary">Сообщений всего</div>
+          <div class="display-6">{{ total_messages }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold text-secondary">Попытки OK / FAIL</div>
+          <div class="display-6">{{ attempts_ok }} / {{ attempts_fail }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ТАБЛИЦА ПО РАССЫЛКАМ -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title mb-3">По рассылкам</h5>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Статус</th>
+              <th>Окно</th>
+              <th>Тема</th>
+              <th class="text-end">Получателей</th>
+              <th class="text-end">Отправлено</th>
+              <th class="text-end">Ошибок</th>
+              <th class="text-end">Попыток OK</th>
+              <th class="text-end">Попыток FAIL</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in mailings %}
+            <tr>
+              <td>#{{ m.id }}</td>
+              <td>{{ m.status }}</td>
+              <td>
+                <div class="small text-secondary">
+                  {{ m.start_at|date:"Y-m-d H:i" }} — {{ m.end_at|date:"Y-m-d H:i" }}
+                </div>
+              </td>
+              <td>
+                {{ m.message.subject|default:"—" }}
+              </td>
+              <td class="text-end">{{ m.recipients.count }}</td>
+              <td class="text-end">{{ m.stat_sent_messages }}</td>
+              <td class="text-end">{{ m.stat_failed_messages }}</td>
+              <td class="text-end">{{ m.stat_attempt_success }}</td>
+              <td class="text-end">{{ m.stat_attempt_fail }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'mailings:detail' m.pk %}">Открыть</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-secondary py-4">Данных пока нет</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
