@@ -26,9 +26,13 @@
             <td><a href="{% url 'messages_app:message_detail' m.pk %}">{{ m.subject }}</a></td>
             <td>{{ m.created_at }}</td>
             <td class="text-end">
-              {% if request.user.is_authenticated and m.owner_id == request.user.id or request.user.is_superuser %}
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'messages_app:message_update' m.pk %}">Редактировать</a>
-                <a class="btn btn-sm btn-outline-danger" href="{% url 'messages_app:message_delete' m.pk %}">Удалить</a>
+              {% if request.user.is_authenticated %}
+                {% if request.user.is_superuser or m.owner_id == request.user.id %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'messages_app:message_update' m.pk %}">Редактировать</a>
+                  <a class="btn btn-sm btn-outline-danger" href="{% url 'messages_app:message_delete' m.pk %}">Удалить</a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
               {% else %}
                 <span class="text-muted">—</span>
               {% endif %}

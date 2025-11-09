@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import MailingUserReportView
 
 app_name = "mailings"
 
@@ -14,4 +15,5 @@ urlpatterns = [
     path("stats/", views.MailingStatsView.as_view(), name="stats"),
     # менеджерская операция: отключить рассылку
     path("<int:pk>/disable/", views.MailingDisableView.as_view(), name="disable"),
+    path("reports/", MailingUserReportView.as_view(), name="user_reports"),
 ]

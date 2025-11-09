@@ -5,7 +5,7 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("clients", "0002_alter_recipient_created_at_and_more.py"),  # ← поставьте последний номер вашей реальной миграции
+        ("clients", "0002_alter_recipient_created_at_and_more"),  # ← поставьте последний номер вашей реальной миграции
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

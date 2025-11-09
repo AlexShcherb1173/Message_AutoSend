@@ -9,10 +9,14 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 from .forms import MailingForm
 from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 from .services import send_mailing
+from common.mixins import ClientCacheMixin
 from clients.models import Recipient
 
 
@@ -170,10 +174,10 @@ class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
         mailings = (
             mailings_qs
             .annotate(
-                stat_sent_messages=Count("logs", filter=Q(logs__status="SENT")),
-                stat_failed_messages=Count("logs", filter=Q(logs__status="ERROR")),
-                stat_attempt_success=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
-                stat_attempt_fail=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
+                sent_total=Count("logs", filter=Q(logs__status="SENT")),
+                failed_total=Count("logs", filter=Q(logs__status="ERROR")),
+                attempt_ok_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
+                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
             )
             .select_related("message")
             .prefetch_related("recipients")
@@ -214,3 +218,74 @@ def mailing_send(request, pk: int):
     else:
         messages.success(request, f"Рассылка отправлена: всего={result.total}, успешно={result.sent}, ошибок={result.skipped}.")
     return redirect("mailings:detail", pk=mailing.pk)
+
+@method_decorator(cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch")
+class MailingUserReportView(ClientCacheMixin, TemplateView):
+    """
+    Персональный отчёт по рассылкам владельца.
+    - По умолчанию показывает отчёт для текущего пользователя.
+    - Менеджер/суперпользователь может передать ?user=<id> чтобы смотреть чужие.
+    - Серверный кэш: 5 минут (Redis через Django cache).
+    - Клиентский кэш: заголовок Cache-Control (по ClientCacheMixin).
+    """
+    template_name = "mailings/user_report.html"
+    cache_seconds = 120  # клиентский кэш (браузер) — 2 минуты
+
+    def _target_user(self):
+        u = self.request.user
+        if u.is_superuser or u.has_perm("mailings.view_all_mailings"):
+            user_id = self.request.GET.get("user")
+            if user_id:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                target = User.objects.filter(pk=user_id).first()
+                if target:
+                    return target
+        return u
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        target = self._target_user()
+        ctx["target_user"] = target
+
+        # ----- серверный кэш для агрегатов -----
+        cache_key = f"mailings:user_report:v1:summary:{target.pk}"
+        summary = cache.get(cache_key)
+
+        if summary is None:
+            mailings_qs = Mailing.objects.filter(owner=target)
+            attempts_qs = MailingAttempt.objects.filter(mailing__owner=target)
+            logs_qs = MailingLog.objects.filter(mailing__owner=target)
+
+            # количество уникальных получателей среди всех рассылок пользователя
+            recipients_total = mailings_qs.values("recipients").distinct().count()
+
+            summary = {
+                "total_mailings": mailings_qs.count(),
+                "active_mailings": mailings_qs.filter(status=MailingStatus.RUNNING).count(),
+                "finished_mailings": mailings_qs.filter(status=MailingStatus.FINISHED).count(),
+                "recipients_total": recipients_total,
+                "attempts_total": attempts_qs.count(),
+                "attempts_ok": attempts_qs.filter(status=AttemptStatus.SUCCESS).count(),
+                "attempts_fail": attempts_qs.filter(status=AttemptStatus.FAIL).count(),
+                "sent_total": logs_qs.filter(status="SENT").count(),
+                "errors_total": logs_qs.filter(status="ERROR").count(),
+            }
+            cache.set(cache_key, summary, 300)  # 5 минут
+
+        ctx["summary"] = summary
+
+        # Построчная статистика по рассылкам (кверисет не кладём в Redis — отдаём «живой» QS)
+        ctx["mailings"] = (
+            Mailing.objects.filter(owner=target)
+            .annotate(
+                recipients_total=Count("recipients", distinct=True),
+                sent_total=Count("logs", filter=Q(logs__status="SENT")),
+                failed_total=Count("logs", filter=Q(logs__status="ERROR")),
+                attempt_ok_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
+                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
+            )
+            .select_related("message")
+            .prefetch_related("recipients")
+        )
+        return ctx

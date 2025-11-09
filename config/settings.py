@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "django_apscheduler",
 
     # Сторонние
     "widget_tweaks",  # pip install django-widget-tweaks
@@ -180,4 +181,38 @@ LOGOUT_REDIRECT_URL = "index"
 
 # === ПРОЧЕЕ ===================================================================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REDIS_URL = os.getenv("REDIS_URL")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "socket_timeout": 2,
+            "socket_connect_timeout": 2,
+            "retry_on_timeout": True,
+            "health_check_interval": 30,
+        },
+        "KEY_PREFIX": "msend",
+        "TIMEOUT": 60 * 15,  # дефолт 15 минут
+    }
+}
+
+# Включим Conditional GET + ETag (для 304 Not Modified)
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.http.ConditionalGetMiddleware",
+    "django.middleware.cache.FetchFromCacheMiddleware",
+]
+
+USE_ETAGS = True  # пусть Django проставляет ETag на полноценные ответы
+
+MAILINGS_MIN_REPEAT_MINUTES = int(os.getenv("MAILINGS_MIN_REPEAT_MINUTES", "5"))
 

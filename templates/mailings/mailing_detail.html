@@ -42,25 +42,28 @@
   </div>
 
   <div class="mb-4 d-flex flex-wrap gap-2">
-    {% if request.user.is_authenticated and mailing.owner_id == request.user.id or request.user.is_superuser %}
-      <a class="btn btn-secondary" href="{% url 'mailings:edit' mailing.id %}">✏️ Редактировать</a>
-      <a class="btn btn-outline-danger" href="{% url 'mailings:delete' mailing.id %}">🗑️ Удалить</a>
+    {% if request.user.is_authenticated %}
+      {% if request.user.is_superuser or mailing.owner_id == request.user.id %}
+        <a class="btn btn-secondary" href="{% url 'mailings:edit' mailing.id %}">✏️ Редактировать</a>
 
-      <form method="post" action="{% url 'mailings:send' mailing.id %}" class="d-inline">
-        {% csrf_token %}
-        <div class="form-check d-inline-block me-2">
-          <input class="form-check-input" type="checkbox" name="dry_run" value="1" id="dryRun">
-          <label class="form-check-label" for="dryRun">Тестовый запуск</label>
-        </div>
-        <button type="submit" class="btn btn-success">▶ Отправить сейчас</button>
-      </form>
-    {% endif %}
+        <form method="post" action="{% url 'mailings:send' mailing.id %}" class="d-inline">
+          {% csrf_token %}
+          <div class="form-check d-inline-block me-2">
+            <input class="form-check-input" type="checkbox" name="dry_run" value="1" id="dryRun">
+            <label class="form-check-label" for="dryRun">Тестовый запуск</label>
+          </div>
+          <button class="btn btn-success" type="submit">▶ Отправить сейчас</button>
+        </form>
 
-    {% if request.user.has_perm 'mailings.disable_mailing' %}
-      <form method="post" action="{% url 'mailings:disable' mailing.pk %}" class="d-inline">
-        {% csrf_token %}
-        <button class="btn btn-warning" type="submit">Отключить (менеджер)</button>
-      </form>
+        <a class="btn btn-outline-danger" href="{% url 'mailings:delete' mailing.id %}">🗑️ Удалить</a>
+      {% endif %}
+
+      {% if request.user.has_perm('mailings.disable_mailing') %}
+        <form method="post" action="{% url 'mailings:disable' mailing.id %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-warning" type="submit">Отключить (менеджер)</button>
+        </form>
+      {% endif %}
     {% endif %}
 
     <a class="btn btn-outline-dark" href="{% url 'mailings:list' %}">← К списку</a>
@@ -70,7 +73,6 @@
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <h4>Попытки рассылки</h4>
-
       {% if mailing.attempts.count %}
         <div class="table-responsive">
           <table class="table table-sm table-striped align-middle">
@@ -107,7 +109,7 @@
 
   <div class="card shadow-sm">
     <div class="card-body">
-      <h4>История отправок (логи)</h4>
+      <h4 class="mb-3">История отправок (логи)</h4>
       {% if mailing.logs.count %}
         <div class="table-responsive">
           <table class="table table-sm table-striped align-middle">
