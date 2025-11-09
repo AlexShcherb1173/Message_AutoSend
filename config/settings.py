@@ -202,6 +202,9 @@ CACHES = {
 # Включим Conditional GET + ETag (для 304 Not Modified)
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "common.middleware.RequestContextMiddleware",
+    "common.middleware.CurrentRequestMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -215,4 +218,135 @@ MIDDLEWARE = [
 USE_ETAGS = True  # пусть Django проставляет ETag на полноценные ответы
 
 MAILINGS_MIN_REPEAT_MINUTES = int(os.getenv("MAILINGS_MIN_REPEAT_MINUTES", "5"))
+
+LOG_DIR = BASE_DIR / "logs"
+(LOG_DIR / "app").mkdir(parents=True, exist_ok=True)
+(LOG_DIR / "requests").mkdir(parents=True, exist_ok=True)
+(LOG_DIR / "security").mkdir(parents=True, exist_ok=True)
+(LOG_DIR / "scheduler").mkdir(parents=True, exist_ok=True)
+
+# кто получает письма при ERROR
+ADMINS = [("Errors", os.getenv("ADMIN_EMAIL", "errors@yourdomain.com"))]
+
+# ── LOGGING ─────────────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_context": {
+            "()": "common.logging_filters.RequestContextFilter",
+        },
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+    },
+    "formatters": {
+        "verbose": {
+            "format": (
+                "%(asctime)s | %(levelname)s | %(name)s | pid=%(process)d | "
+                "rid=%(request_id)s | user=%(user_email)s | %(message)s"
+            )
+        },
+        "simple": {
+            "format": "%(levelname)s %(name)s: %(message)s"
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "filters": ["request_context"],
+            "formatter": "verbose",
+        },
+        "app_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "app" / "app.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "encoding": "utf-8",
+            "filters": ["request_context"],
+            "formatter": "verbose",
+        },
+        "requests_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "requests" / "requests.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 7,
+            "encoding": "utf-8",
+            "filters": ["request_context"],
+            "formatter": "verbose",
+        },
+        "security_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "security" / "security.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "encoding": "utf-8",
+            "filters": ["request_context"],
+            "formatter": "verbose",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "filters": ["require_debug_false"],
+        },
+    },
+    "loggers": {
+        # наши прикладные логеры
+        "app": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "app.requests": {
+            "handlers": ["console", "requests_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "app.security": {
+            "handlers": ["console", "security_file", "mail_admins"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+
+        # каждый django-приложение может логировать под своим именем
+        "mailings": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "messages_app": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "clients": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        # системные логеры Django
+        "django.request": {
+            "handlers": ["console", "mail_admins", "requests_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console", "security_file", "mail_admins"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Включи при необходимости трассировку SQL:
+        # "django.db.backends": {
+        #     "handlers": ["console"],
+        #     "level": "INFO",
+        #     "propagate": False,
+        # },
+    },
+}
+
 

@@ -1,20 +1,26 @@
 from __future__ import annotations
+
+import logging
+import time
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
+from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
-from django.conf import settings
 
 from .models import Mailing, MailingLog, MailingAttempt, AttemptStatus
+from clients.models import Recipient
+
+log = logging.getLogger("mailings")
 
 
 @dataclass
 class SendResult:
     """Агрегированный результат работы send_mailing()."""
-    total: int   # адресатов всего
-    sent: int    # реально отправлено
-    skipped: int # пропущено/ошибки/DRY-RUN
+    total: int = 0    # адресатов всего
+    sent: int = 0     # реально отправлено
+    skipped: int = 0  # пропущено/ошибки/DRY-RUN
 
 
 def _iter_emails(mailing: Mailing) -> Iterable[tuple[str, str]]:
@@ -27,15 +33,21 @@ def _iter_emails(mailing: Mailing) -> Iterable[tuple[str, str]]:
 
 
 def send_mailing(mailing: Mailing, *, user=None, dry_run: bool = False) -> SendResult:
-    """Ручной запуск рассылки.
-
-    Пишем:
-      • MailingAttempt (агрегат по запуску) — с пометкой initiated_by
-      • MailingLog на каждого адресата — со статусом SENT / ERROR / DRY_RUN
-        и с пометкой triggered_by (email инициатора).
-
-    Эти данные используются для персональных отчётов по пользователям.
     """
+    Ручной/плановый запуск рассылки.
+
+    Логируем:
+      • старт/завершение отправки (с длительностью);
+      • каждую попытку отправки (в т.ч. DRY-RUN);
+      • исключения (с трейсбеком);
+      • сводку (total/sent/skipped).
+
+    Пишем в БД:
+      • MailingAttempt (агрегат по запуску) — с пометкой triggered_by;
+      • MailingLog на каждого адресата — статусы: SENT / ERROR / DRY_RUN.
+    """
+    ts0 = time.perf_counter()
+
     recipient_emails = list(_iter_emails(mailing))
     total = len(recipient_emails)
     sent = 0
@@ -49,76 +61,111 @@ def send_mailing(mailing: Mailing, *, user=None, dry_run: bool = False) -> SendR
     if user and getattr(user, "email", None):
         initiator = user.email
 
-    # Фиксируем сам факт «запуска попытки» (сначала предполагаем FAIL, потом обновим)
+    log.info(
+        "SEND start mailing_id=%s dry_run=%s total=%s subject=%r initiator=%s",
+        mailing.pk, dry_run, total, subject, initiator or "-",
+    )
+
+    # Фиксируем факт «запуска попытки» (сначала ставим FAIL, позже обновим)
     attempt = MailingAttempt.objects.create(
         mailing=mailing,
         status=AttemptStatus.FAIL,  # обновим на SUCCESS по факту
         server_response="attempt started",
         triggered_by=initiator or None,
     )
+    log.debug("ATTEMPT created attempt_id=%s mailing_id=%s", attempt.pk, mailing.pk)
 
-    for email, name in recipient_emails:
-        if dry_run:
-            # Тест: логируем DRY_RUN (письмо не отправлялось)
-            MailingLog.objects.create(
-                mailing=mailing,
-                recipient=email,
-                status="DRY_RUN",
-                detail="Письмо не отправлялось (dry-run).",
-                triggered_by=initiator or None,
-            )
-            skipped += 1
-            continue
-
-        try:
-            sent_count = send_mail(
-                subject=subject,
-                message=body,
-                from_email=from_email,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-            if sent_count > 0:
-                sent += 1
+    try:
+        for email, name in recipient_emails:
+            if dry_run:
+                # Тест: письмо не отправляется
                 MailingLog.objects.create(
                     mailing=mailing,
                     recipient=email,
-                    status="SENT",
-                    detail="Отправлено стандартным SMTP backend.",
+                    status="DRY_RUN",
+                    detail="Письмо не отправлялось (dry-run).",
                     triggered_by=initiator or None,
                 )
-            else:
+                skipped += 1
+                log.info("DRY-RUN skip mailing_id=%s to=%s", mailing.pk, email)
+                continue
+
+            try:
+                log.debug("SMTP send try mailing_id=%s to=%s", mailing.pk, email)
+                sent_count = send_mail(
+                    subject=subject,
+                    message=body,
+                    from_email=from_email,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                if sent_count > 0:
+                    sent += 1
+                    MailingLog.objects.create(
+                        mailing=mailing,
+                        recipient=email,
+                        status="SENT",
+                        detail="Отправлено стандартным SMTP backend.",
+                        triggered_by=initiator or None,
+                    )
+                    log.info("SENT ok mailing_id=%s to=%s", mailing.pk, email)
+                else:
+                    skipped += 1
+                    MailingLog.objects.create(
+                        mailing=mailing,
+                        recipient=email,
+                        status="ERROR",
+                        detail="send_mail вернул 0.",
+                        triggered_by=initiator or None,
+                    )
+                    log.warning("SEND returned 0 mailing_id=%s to=%s", mailing.pk, email)
+
+            except Exception:  # noqa: BLE001
                 skipped += 1
                 MailingLog.objects.create(
                     mailing=mailing,
                     recipient=email,
                     status="ERROR",
-                    detail="send_mail вернул 0.",
+                    detail="Exception during send (см. серверный лог).",
                     triggered_by=initiator or None,
                 )
-        except Exception as exc:  # noqa: BLE001
-            skipped += 1
-            MailingLog.objects.create(
-                mailing=mailing,
-                recipient=email,
-                status="ERROR",
-                detail=str(exc),
-                triggered_by=initiator or None,
-            )
+                log.exception("SEND fail mailing_id=%s to=%s", mailing.pk, email)
 
-    # Пересчитываем статус попытки: успех, если было хоть одно реальное отправление
-    if not dry_run and sent > 0:
-        attempt.status = AttemptStatus.SUCCESS
-        attempt.server_response = f"sent={sent}; skipped={skipped}"
+        # Пересчитываем статус попытки
+        if dry_run:
+            attempt.status = AttemptStatus.SUCCESS
+            attempt.server_response = f"dry-run; total={total}; skipped={skipped}"
+        else:
+            if sent > 0:
+                attempt.status = AttemptStatus.SUCCESS
+                attempt.server_response = f"sent={sent}; skipped={skipped}"
+                mailing.last_sent_at = timezone.now()
+                mailing.refresh_status(save=True)
+            else:
+                attempt.status = AttemptStatus.FAIL
+                attempt.server_response = f"no real sends; skipped={skipped}"
+
         attempt.save(update_fields=["status", "server_response"])
-        mailing.last_sent_at = timezone.now()
-        mailing.refresh_status(save=True)
-    else:
-        attempt.status = AttemptStatus.FAIL if not dry_run else AttemptStatus.SUCCESS
-        attempt.server_response = (
-            "dry-run (ok)" if dry_run else f"no real sends; skipped={skipped}"
+        log.debug(
+            "ATTEMPT updated attempt_id=%s status=%s response=%s",
+            attempt.pk, attempt.status, attempt.server_response,
         )
-        attempt.save(update_fields=["status", "server_response"])
 
-    return SendResult(total=total, sent=sent, skipped=skipped)
+        dur_ms = int((time.perf_counter() - ts0) * 1000)
+        log.info(
+            "SEND done mailing_id=%s dry_run=%s duration_ms=%s total=%s sent=%s skipped=%s",
+            mailing.pk, dry_run, dur_ms, total, sent, skipped,
+        )
+        return SendResult(total=total, sent=sent, skipped=skipped)
+
+    except Exception:
+        # Фатальная ошибка всего запуска
+        log.exception("SEND fatal mailing_id=%s", mailing.pk)
+        try:
+            attempt.status = AttemptStatus.FAIL
+            attempt.server_response = "fatal error (см. серверный лог)"
+            attempt.save(update_fields=["status", "server_response"])
+        except Exception:
+            log.exception("ATTEMPT save fail (fatal) mailing_id=%s", mailing.pk)
+        raise
 
