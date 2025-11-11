@@ -5,15 +5,13 @@ from .models import Recipient
 @admin.register(Recipient)
 class RecipientAdmin(admin.ModelAdmin):
     """Админ-интерфейс для модели Recipient (получатель рассылки).
-
     Позволяет быстро управлять контактами, искать по email/ФИО/комментарию и
     видеть служебные метки.
     Особенности:
       • Список: email, ФИО, дата создания.
       • Поиск по email, ФИО и комментариям.
       • Фильтры по дате создания.
-      • Поля created_at/updated_at — только для чтения.
-    """
+      • Поля created_at/updated_at — только для чтения."""
 
     list_display = ("email", "full_name", "created_at")
     search_fields = ("email", "full_name", "comment")

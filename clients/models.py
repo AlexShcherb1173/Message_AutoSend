@@ -6,15 +6,12 @@ from django.core.validators import MinLengthValidator
 
 
 class Recipient(models.Model):
-    """
-    Получатель рассылки (клиент).
+    """Получатель рассылки (клиент).
     Поле owner — владелец клиента; ограничения по владельцу.
-
     Храним:
       • email (уникальный),
       • полное имя (full_name),
-      • комментарий (comment).
-    """
+      • комментарий (comment)."""
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

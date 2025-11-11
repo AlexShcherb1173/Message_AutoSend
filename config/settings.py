@@ -150,7 +150,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # === ПОЧТА (SMTP) =============================================================
 # По умолчанию в DEBUG используем filebased backend (письма уходят в папку sent_emails).
-# Если нужно отправлять по-настоящему в DEBUG, установи FORCE_SMTP=1 в .env.
+# Если нужно отправлять по-настоящему в DEBUG, установить FORCE_SMTP=1 в .env.
 FORCE_SMTP = env_bool("FORCE_SMTP", False)
 
 if DEBUG and not FORCE_SMTP:
@@ -340,7 +340,7 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
-        # Включи при необходимости трассировку SQL:
+        # Включить при необходимости трассировку SQL:
         # "django.db.backends": {
         #     "handlers": ["console"],
         #     "level": "INFO",
