@@ -1,6 +1,7 @@
 from django.db import migrations, models
 from django.conf import settings
 
+
 class Migration(migrations.Migration):
     dependencies = [
         ("clients", "0005_fill_owner"),

@@ -7,8 +7,10 @@ def fill_owner_recipients(apps, schema_editor):
     UserModel = apps.get_model(*settings.AUTH_USER_MODEL.split("."))
     Recipient = apps.get_model("clients", "Recipient")
 
-    owner = UserModel.objects.filter(is_superuser=True).order_by("id").first() or \
-            UserModel.objects.order_by("id").first()
+    owner = (
+        UserModel.objects.filter(is_superuser=True).order_by("id").first()
+        or UserModel.objects.order_by("id").first()
+    )
     if owner is None:
         kwargs = {}
         if hasattr(UserModel, "username"):

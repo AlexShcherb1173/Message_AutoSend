@@ -6,10 +6,8 @@ from django.core.validators import MinLengthValidator
 
 
 class Message(models.Model):
-    """
-    Шаблон письма для рассылок.
-    Поле owner — кто создал сообщение; ограничение доступа по владельцу.
-    """
+    """Шаблон письма для рассылок.
+    Поле owner — кто создал сообщение; ограничение доступа по владельцу."""
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -42,9 +40,7 @@ class Message(models.Model):
             models.Index(fields=["-created_at"], name="idx_msg_created_desc"),
             models.Index(fields=["subject"], name="idx_msg_subject"),
         ]
-        permissions = (
-            ("view_all_messages", "Может просматривать все сообщения"),
-        )
+        permissions = (("view_all_messages", "Может просматривать все сообщения"),)
 
     def __str__(self) -> str:
         subj = (self.subject or "").strip()

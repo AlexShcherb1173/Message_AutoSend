@@ -22,6 +22,7 @@ class MailingForm(forms.ModelForm):
             - Модель, на основе которой строится форма.
             - Набор редактируемых полей.
             - Вспомогательные тексты (help_text) и виджеты."""
+
         model = Mailing
         fields = ["start_at", "end_at", "message", "recipients"]
         widgets = {
@@ -59,6 +60,9 @@ class MailingForm(forms.ModelForm):
 
         # Проверка, что окончание не в прошлом
         if end_at and end_at <= timezone.now():
-            self.add_error("end_at", "Окончание уже прошло — рассылка не может быть создана в прошлом.")
+            self.add_error(
+                "end_at",
+                "Окончание уже прошло — рассылка не может быть создана в прошлом.",
+            )
 
         return cleaned

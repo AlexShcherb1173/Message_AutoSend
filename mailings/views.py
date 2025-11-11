@@ -2,13 +2,24 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    PermissionRequiredMixin,
+)
 from django.db.models import Count, Q
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic import (
+    ListView,
+    DetailView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+    TemplateView,
+)
 from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -17,16 +28,15 @@ from .forms import MailingForm
 from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 from .services import send_mailing
 from common.mixins import ClientCacheMixin
-from clients.models import Recipient
 
 
 # ===== Миксины ограничения доступа (владельцы/менеджеры) =====
 
+
 class OwnerFilteredQuerysetMixin(LoginRequiredMixin):
-    """
-    Ограничивает queryset объектами текущего пользователя.
-    Если у пользователя есть perm 'mailings.view_all_mailings' — он видит все.
-    """
+    """Ограничивает queryset объектами текущего пользователя.
+    Если у пользователя есть perm 'mailings.view_all_mailings' — он видит все."""
+
     view_all_permission = "mailings.view_all_mailings"
 
     def get_queryset(self):
@@ -38,10 +48,9 @@ class OwnerFilteredQuerysetMixin(LoginRequiredMixin):
 
 
 class OwnerOnlyMutationMixin(UserPassesTestMixin):
-    """
-    Разрешает изменение/удаление только владельцу (или суперпользователю).
-    Менеджер видит всё, но менять/удалять чужое не может.
-    """
+    """Разрешает изменение/удаление только владельцу (или суперпользователю).
+    Менеджер видит всё, но менять/удалять чужое не может."""
+
     def test_func(self):
         obj = self.get_object()
         u = self.request.user
@@ -50,10 +59,10 @@ class OwnerOnlyMutationMixin(UserPassesTestMixin):
 
 # ===== CRUD + отчёты =====
 
+
 class MailingListView(OwnerFilteredQuerysetMixin, ListView):
-    """
-    Список рассылок с фильтрацией по владельцу/статусу и аннотациями статистики.
-    """
+    """Список рассылок с фильтрацией по владельцу/статусу и аннотациями статистики."""
+
     model = Mailing
     paginate_by = 20
     template_name = "mailings/mailing_list.html"
@@ -68,9 +77,8 @@ class MailingListView(OwnerFilteredQuerysetMixin, ListView):
 
 
 class MailingDetailView(OwnerFilteredQuerysetMixin, DetailView):
-    """
-    Детали рассылки (только для владельца/менеджера/суперадмина) + словарь stats.
-    """
+    """Детали рассылки (только для владельца/менеджера/суперадмина) + словарь stats."""
+
     model = Mailing
     template_name = "mailings/mailing_detail.html"
     context_object_name = "mailing"
@@ -85,9 +93,8 @@ class MailingDetailView(OwnerFilteredQuerysetMixin, DetailView):
 
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
-    """
-    Создание рассылки: владелец = текущий пользователь.
-    """
+    """Создание рассылки: владелец = текущий пользователь."""
+
     model = Mailing
     form_class = MailingForm
     template_name = "mailings/mailing_form.html"
@@ -104,6 +111,7 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
 
 class MailingUpdateView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, UpdateView):
     """Редактирование только своей рассылки."""
+
     model = Mailing
     form_class = MailingForm
     template_name = "mailings/mailing_form.html"
@@ -117,16 +125,16 @@ class MailingUpdateView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, Upda
 
 class MailingDeleteView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, DeleteView):
     """Удаление только своей рассылки."""
+
     model = Mailing
     template_name = "mailings/mailing_confirm_delete.html"
     success_url = reverse_lazy("mailings:list")
 
 
 class MailingSendView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, View):
-    """
-    Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю).
-    Менеджер видит карточку, но не отправляет.
-    """
+    """Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю).
+    Менеджер видит карточку, но не отправляет."""
+
     def post(self, request, pk: int):
         mailing = get_object_or_404(Mailing, pk=pk)
         # OwnerOnlyMutationMixin защитит от чужих действий
@@ -134,17 +142,22 @@ class MailingSendView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, View):
         result = send_mailing(mailing, user=request.user, dry_run=dry_run)
         mailing.refresh_status(save=True)
         if dry_run:
-            messages.info(request, f"DRY-RUN: всего={result.total}, отправлено=0, пропущено={result.skipped}.")
+            messages.info(
+                request,
+                f"DRY-RUN: всего={result.total}, отправлено=0, пропущено={result.skipped}.",
+            )
         else:
-            messages.success(request, f"Готово: всего={result.total}, отправлено={result.sent}, пропущено={result.skipped}.")
+            messages.success(
+                request,
+                f"Готово: всего={result.total}, отправлено={result.sent}, пропущено={result.skipped}.",
+            )
         return redirect("mailings:detail", pk=mailing.pk)
 
 
 class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
-    """
-    Страница отчётов.
-    Пользователь видит только свои данные, менеджер/суперадмин — сводку по всем.
-    """
+    """Страница отчётов.
+    Пользователь видит только свои данные, менеджер/суперадмин — сводку по всем."""
+
     template_name = "mailings/mailing_stats.html"
 
     def get_context_data(self, **kwargs):
@@ -172,12 +185,15 @@ class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
 
         # Дополнительно (как в stats шаблоне): построчная статистика по рассылкам
         mailings = (
-            mailings_qs
-            .annotate(
+            mailings_qs.annotate(
                 sent_total=Count("logs", filter=Q(logs__status="SENT")),
                 failed_total=Count("logs", filter=Q(logs__status="ERROR")),
-                attempt_ok_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
-                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
+                attempt_ok_total=Count(
+                    "attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)
+                ),
+                attempt_fail_total=Count(
+                    "attempts", filter=Q(attempts__status=AttemptStatus.FAIL)
+                ),
             )
             .select_related("message")
             .prefetch_related("recipients")
@@ -188,10 +204,9 @@ class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
 
 # Доп. функционал для менеджеров: «отключить» рассылку (права required)
 class MailingDisableView(PermissionRequiredMixin, View):
-    """
-    Принудительно завершить рассылку (для менеджеров/админов).
-    Требуется perm: 'mailings.disable_mailing'.
-    """
+    """Принудительно завершить рассылку (для менеджеров/админов).
+    Требуется perm: 'mailings.disable_mailing'."""
+
     permission_required = "mailings.disable_mailing"
 
     def post(self, request, pk: int):
@@ -214,20 +229,28 @@ def mailing_send(request, pk: int):
     result = send_mailing(mailing, user=request.user, dry_run=dry_run)
     mailing.refresh_status(save=True)
     if dry_run:
-        messages.info(request, f"Тестовый запуск завершён: адресатов={result.total}, реальных отправок нет.")
+        messages.info(
+            request,
+            f"Тестовый запуск завершён: адресатов={result.total}, реальных отправок нет.",
+        )
     else:
-        messages.success(request, f"Рассылка отправлена: всего={result.total}, успешно={result.sent}, ошибок={result.skipped}.")
+        messages.success(
+            request,
+            f"Рассылка отправлена: всего={result.total}, успешно={result.sent}, ошибок={result.skipped}.",
+        )
     return redirect("mailings:detail", pk=mailing.pk)
 
-@method_decorator(cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch")
+
+@method_decorator(
+    cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch"
+)
 class MailingUserReportView(ClientCacheMixin, TemplateView):
-    """
-    Персональный отчёт по рассылкам владельца.
+    """Персональный отчёт по рассылкам владельца.
     - По умолчанию показывает отчёт для текущего пользователя.
     - Менеджер/суперпользователь может передать ?user=<id> чтобы смотреть чужие.
     - Серверный кэш: 5 минут (Redis через Django cache).
-    - Клиентский кэш: заголовок Cache-Control (по ClientCacheMixin).
-    """
+    - Клиентский кэш: заголовок Cache-Control (по ClientCacheMixin)."""
+
     template_name = "mailings/user_report.html"
     cache_seconds = 120  # клиентский кэш (браузер) — 2 минуты
 
@@ -237,6 +260,7 @@ class MailingUserReportView(ClientCacheMixin, TemplateView):
             user_id = self.request.GET.get("user")
             if user_id:
                 from django.contrib.auth import get_user_model
+
                 User = get_user_model()
                 target = User.objects.filter(pk=user_id).first()
                 if target:
@@ -262,8 +286,12 @@ class MailingUserReportView(ClientCacheMixin, TemplateView):
 
             summary = {
                 "total_mailings": mailings_qs.count(),
-                "active_mailings": mailings_qs.filter(status=MailingStatus.RUNNING).count(),
-                "finished_mailings": mailings_qs.filter(status=MailingStatus.FINISHED).count(),
+                "active_mailings": mailings_qs.filter(
+                    status=MailingStatus.RUNNING
+                ).count(),
+                "finished_mailings": mailings_qs.filter(
+                    status=MailingStatus.FINISHED
+                ).count(),
                 "recipients_total": recipients_total,
                 "attempts_total": attempts_qs.count(),
                 "attempts_ok": attempts_qs.filter(status=AttemptStatus.SUCCESS).count(),
@@ -282,8 +310,12 @@ class MailingUserReportView(ClientCacheMixin, TemplateView):
                 recipients_total=Count("recipients", distinct=True),
                 sent_total=Count("logs", filter=Q(logs__status="SENT")),
                 failed_total=Count("logs", filter=Q(logs__status="ERROR")),
-                attempt_ok_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)),
-                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
+                attempt_ok_total=Count(
+                    "attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)
+                ),
+                attempt_fail_total=Count(
+                    "attempts", filter=Q(attempts__status=AttemptStatus.FAIL)
+                ),
             )
             .select_related("message")
             .prefetch_related("recipients")

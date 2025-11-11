@@ -15,23 +15,18 @@ MAX_AVATAR_MB = 5
 
 
 def validate_avatar_content(file: UploadedFile):
-    """
-    Проверяет MIME-тип загруженного файла.
-
+    """Проверяет MIME-тип загруженного файла.
     Разрешённые форматы:
       - JPEG (.jpg, .jpeg)
       - PNG (.png)
-      - WEBP (.webp)
-    """
+      - WEBP (.webp)"""
     ctype = getattr(file, "content_type", "") or ""
     if ctype.lower() not in ALLOWED_IMAGE_MIME:
         raise ValidationError("Допустимы только изображения JPEG, PNG или WebP.")
 
 
 def validate_avatar_size(file: UploadedFile):
-    """
-    Проверяет, чтобы размер загружаемого аватара не превышал MAX_AVATAR_MB мегабайт.
-    """
+    """Проверяет, чтобы размер загружаемого аватара не превышал MAX_AVATAR_MB мегабайт."""
     if file.size > MAX_AVATAR_MB * 1024 * 1024:
         raise ValidationError(f"Размер аватара не должен превышать {MAX_AVATAR_MB} МБ.")
 
@@ -40,27 +35,22 @@ def validate_avatar_size(file: UploadedFile):
 #                    МЕНЕДЖЕР ПОЛЬЗОВАТЕЛЯ
 # ============================================================
 
-class CustomUserManager(BaseUserManager):
-    """
-    Кастомный менеджер для модели User.
 
+class CustomUserManager(BaseUserManager):
+    """Кастомный менеджер для модели User.
     Основные отличия:
       - авторизация по полю email вместо username;
       - создание суперпользователя также требует email;
-      - username формируется автоматически (если не указан).
-    """
+      - username формируется автоматически (если не указан)."""
 
     def _create_user(self, email: str, password: str | None, **extra_fields):
         """Базовый конструктор пользователя.
-
         Args:
             email: адрес, будет логином (уникальный).
             password: пароль (может быть None для инвайтов).
             extra_fields: прочие поля модели.
-
         Raises:
-            ValueError: если email не указан.
-        """
+            ValueError: если email не указан."""
         if not email:
             raise ValueError("Нужно указать email")
         email = self.normalize_email(email)
@@ -87,29 +77,26 @@ class CustomUserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
+
 # ============================================================
 #                    МОДЕЛЬ ПОЛЬЗОВАТЕЛЯ
 # ============================================================
 
-def user_avatar_upload_to(instance: "User", filename: str) -> str:
-    """
-    Возвращает путь для сохранения аватаров пользователей.
 
-    """
+def user_avatar_upload_to(instance: "User", filename: str) -> str:
+    """Возвращает путь для сохранения аватаров пользователей."""
     return f"users/{instance.pk or 'new'}/avatar/{filename}"
 
-class User(AbstractUser):
-    """
-    Кастомная модель пользователя для проекта Message_AutoSend.
 
+class User(AbstractUser):
+    """Кастомная модель пользователя для проекта Message_AutoSend.
     Отличия от стандартной модели:
       • Авторизация по email (USERNAME_FIELD = 'email').
       • Поля username и email — уникальные.
       • Дополнительные поля:
             - avatar (ImageField)
             - phone (CharField)
-            - country (CharField)
-    """
+            - country (CharField)"""
 
     username = None
 
@@ -162,10 +149,8 @@ class User(AbstractUser):
 
     @property
     def avatar_url(self) -> str | None:
-        """
-        Возвращает абсолютный URL аватара (если загружен).
-        Если файл не задан — возвращает None.
-        """
+        """Возвращает абсолютный URL аватара (если загружен).
+        Если файл не задан — возвращает None."""
         if self.avatar and hasattr(self.avatar, "url"):
             return self.avatar.url
         return None

@@ -8,12 +8,11 @@ from django.db.models import Count, Q
 
 
 class MailingStatus(models.TextChoices):
-    """
-    Возможные статусы рассылки.
+    """Возможные статусы рассылки.
     CREATED  ("Создана")   — объект создан, отправки ещё не начались.
     RUNNING  ("Запущена")  — активна: было хотя бы одно отправление ИЛИ текущее время в окне.
-    FINISHED ("Завершена") — временное окно завершено.
-    """
+    FINISHED ("Завершена") — временное окно завершено."""
+
     CREATED = "Создана", "Создана"
     RUNNING = "Запущена", "Запущена"
     FINISHED = "Завершена", "Завершена"
@@ -31,6 +30,7 @@ class MailingQuerySet(models.QuerySet):
       - attempt_success:  кол-во попыток со статусом 'Успешно'
       - attempt_fail:     кол-во попыток со статусом 'Не успешно'
     """
+
     def with_stats(self) -> "MailingQuerySet":
         return self.annotate(
             sent_messages=Count("logs", filter=Q(logs__status="SENT")),
@@ -43,6 +43,7 @@ class MailingQuerySet(models.QuerySet):
 
 class MailingManager(models.Manager.from_queryset(MailingQuerySet)):
     """Менеджер, отдающий расширенный QuerySet (with_stats)."""
+
     pass
 
 
@@ -73,7 +74,7 @@ class Mailing(models.Model):
 
     message = models.ForeignKey(
         "messages_app.Message",
-        on_delete=models.PROTECT,           # бережём историю писем
+        on_delete=models.PROTECT,  # бережём историю писем
         verbose_name="Сообщение",
         related_name="mailings",
     )
@@ -86,7 +87,9 @@ class Mailing(models.Model):
     )
 
     last_sent_at = models.DateTimeField(
-        "Последняя отправка", null=True, blank=True,
+        "Последняя отправка",
+        null=True,
+        blank=True,
         help_text="Ставитcя после первой реальной отправки.",
     )
 
@@ -203,6 +206,7 @@ class MailingLog(models.Model):
     Важный момент: поле `triggered_by` хранит «кто инициировал отправку»
     (обычно email пользователя). На основании этого считаем персональные отчёты.
     """
+
     mailing = models.ForeignKey(
         Mailing, on_delete=models.CASCADE, related_name="logs", verbose_name="Рассылка"
     )
@@ -215,7 +219,10 @@ class MailingLog(models.Model):
     )
     detail = models.TextField("Детали", blank=True)
     triggered_by = models.CharField(
-        "Кем запущено", max_length=150, blank=True, null=True,
+        "Кем запущено",
+        max_length=150,
+        blank=True,
+        null=True,
         help_text="Идентификатор инициатора (обычно email пользователя).",
     )
 
@@ -224,7 +231,9 @@ class MailingLog(models.Model):
         verbose_name_plural = "Логи отправок"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=["mailing", "-created_at"], name="idx_log_mailing_created"),
+            models.Index(
+                fields=["mailing", "-created_at"], name="idx_log_mailing_created"
+            ),
             models.Index(fields=["status"], name="idx_log_status"),
             models.Index(fields=["recipient"], name="idx_log_recipient"),
             models.Index(fields=["triggered_by"], name="idx_log_triggered_by"),
@@ -236,6 +245,7 @@ class MailingLog(models.Model):
 
 class AttemptStatus(models.TextChoices):
     """Статусы агрегированной попытки."""
+
     SUCCESS = "Успешно", "Успешно"
     FAIL = "Не успешно", "Не успешно"
 
@@ -247,14 +257,21 @@ class MailingAttempt(models.Model):
     Поле `triggered_by` фиксирует инициатора попытки (по email/логину),
     чтобы формировать персональные отчёты без связи на User.
     """
+
     mailing = models.ForeignKey(
-        Mailing, on_delete=models.CASCADE, related_name="attempts", verbose_name="Рассылка"
+        Mailing,
+        on_delete=models.CASCADE,
+        related_name="attempts",
+        verbose_name="Рассылка",
     )
     attempted_at = models.DateTimeField("Дата/время попытки", auto_now_add=True)
     status = models.CharField("Статус", max_length=16, choices=AttemptStatus.choices)
     server_response = models.TextField("Ответ почтового сервера", blank=True)
     triggered_by = models.CharField(
-        "Кем запущено", max_length=150, blank=True, null=True,
+        "Кем запущено",
+        max_length=150,
+        blank=True,
+        null=True,
         help_text="Идентификатор инициатора (обычно email пользователя).",
     )
 
@@ -263,11 +280,12 @@ class MailingAttempt(models.Model):
         verbose_name_plural = "Попытки рассылки"
         ordering = ("-attempted_at",)
         indexes = [
-            models.Index(fields=["mailing", "-attempted_at"], name="idx_attempt_mailing_last"),
+            models.Index(
+                fields=["mailing", "-attempted_at"], name="idx_attempt_mailing_last"
+            ),
             models.Index(fields=["status"], name="idx_attempt_status"),
             models.Index(fields=["triggered_by"], name="idx_attempt_triggered_by"),
         ]
 
     def __str__(self) -> str:
         return f"[{self.status}] mailing={self.mailing_id} at {self.attempted_at:%Y-%m-%d %H:%M:%S}"
-

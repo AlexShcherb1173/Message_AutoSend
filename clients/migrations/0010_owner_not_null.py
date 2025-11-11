@@ -1,6 +1,7 @@
 from django.db import migrations, models
 from django.conf import settings
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -17,7 +18,9 @@ class Migration(migrations.Migration):
                 related_name="recipients",
                 verbose_name="Владелец",
                 help_text="Пользователь-владелец карточки клиента.",
-                null=False, blank=False, db_index=True,
+                null=False,
+                blank=False,
+                db_index=True,
             ),
         ),
     ]

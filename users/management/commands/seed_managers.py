@@ -11,13 +11,12 @@ from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
-    """
-    Создаёт/обновляет группу «Менеджеры» и назначает права:
-      • Просмотр всех рассылок/получателей/сообщений.
-      • Отключение рассылок.
-      • Просмотр списка пользователей (и право их блокировать через админку:
-        это обычное 'change_user', чтобы менять is_active).
-    """
+    """Создаёт/обновляет группу «Менеджеры» и назначает права:
+    • Просмотр всех рассылок/получателей/сообщений.
+    • Отключение рассылок.
+    • Просмотр списка пользователей (и право их блокировать через админку:
+      это обычное 'change_user', чтобы менять is_active)."""
+
     help = "Создать группу «Менеджеры» и выдать ей необходимые права."
 
     def handle(self, *args, **options):
@@ -58,7 +57,11 @@ class Command(BaseCommand):
                 p = Permission.objects.get(content_type=user_ct, codename=codename)
                 group.permissions.add(p)
             except Permission.DoesNotExist:
-                self.stdout.write(self.style.WARNING(f"Permission {codename} for user model not found"))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Permission {codename} for user model not found"
+                    )
+                )
 
         # Назначаем кастомные + базовые perms по content_type
         mapping = {
@@ -75,6 +78,8 @@ class Command(BaseCommand):
                 p = Permission.objects.get(content_type=ct, codename=codename)
                 group.permissions.add(p)
             except Permission.DoesNotExist:
-                self.stdout.write(self.style.WARNING(f"Permission {app_label}.{codename} not found"))
+                self.stdout.write(
+                    self.style.WARNING(f"Permission {app_label}.{codename} not found")
+                )
 
         self.stdout.write(self.style.SUCCESS("Группа «Менеджеры» обновлена."))

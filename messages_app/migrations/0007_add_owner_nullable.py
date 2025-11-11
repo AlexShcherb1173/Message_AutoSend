@@ -1,6 +1,7 @@
 from django.db import migrations, models
 from django.conf import settings
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -18,7 +19,9 @@ class Migration(migrations.Migration):
                 related_name="messages_owned",
                 verbose_name="Владелец",
                 help_text="Пользователь-владелец шаблона сообщения.",
-                null=True, blank=True, db_index=True,
+                null=True,
+                blank=True,
+                db_index=True,
             ),
         ),
     ]

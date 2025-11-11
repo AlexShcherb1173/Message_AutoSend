@@ -7,10 +7,9 @@ from .request_storage import set_request, clear_request
 
 
 class CurrentRequestMiddleware(MiddlewareMixin):
-    """
-    Кладёт текущий request в thread-local, проставляет request_id
-    и дублирует его в заголовок ответа X-Request-ID.
-    """
+    """Кладёт текущий request в thread-local, проставляет request_id
+    и дублирует его в заголовок ответа X-Request-ID."""
+
     inbound_header = "HTTP_X_REQUEST_ID"  # если прокси присылает внешний RID
     outbound_header = "X-Request-ID"
 
@@ -21,7 +20,9 @@ class CurrentRequestMiddleware(MiddlewareMixin):
 
         user = getattr(request, "user", None)
         request.user_email = (
-            getattr(user, "email", "-") if getattr(user, "is_authenticated", False) else "-"
+            getattr(user, "email", "-")
+            if getattr(user, "is_authenticated", False)
+            else "-"
         )
 
     def process_response(self, request, response):

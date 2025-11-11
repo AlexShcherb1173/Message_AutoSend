@@ -1,6 +1,7 @@
 from django.db import migrations, models
 from django.conf import settings
 
+
 class Migration(migrations.Migration):
     dependencies = [
         ("clients", "0001_initial"),
@@ -17,7 +18,7 @@ class Migration(migrations.Migration):
                 related_name="recipients",
                 verbose_name="Владелец",
                 help_text="Пользователь-владелец карточки клиента.",
-                null=True,   # временно допускаем NULL
+                null=True,  # временно допускаем NULL
                 blank=True,
             ),
         ),

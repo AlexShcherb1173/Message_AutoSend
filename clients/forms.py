@@ -15,5 +15,3 @@ class RecipientForm(forms.ModelForm):
         if len(name) < 3:
             raise forms.ValidationError("ФИО должно быть не короче 3 символов.")
         return name
-
-

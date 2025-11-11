@@ -38,8 +38,14 @@ class Recipient(models.Model):
         help_text="Дополнительная информация о получателе (необязательно).",
     )
 
-    created_at = models.DateTimeField("Создано", auto_now_add=True, help_text="Дата и время создания записи.")
-    updated_at = models.DateTimeField("Обновлено", auto_now=True, help_text="Дата и время последнего обновления записи.")
+    created_at = models.DateTimeField(
+        "Создано", auto_now_add=True, help_text="Дата и время создания записи."
+    )
+    updated_at = models.DateTimeField(
+        "Обновлено",
+        auto_now=True,
+        help_text="Дата и время последнего обновления записи.",
+    )
 
     class Meta:
         verbose_name = "Получатель"
@@ -51,9 +57,7 @@ class Recipient(models.Model):
             models.Index(fields=["full_name"], name="idx_recipient_fullname"),
             models.Index(fields=["-created_at"], name="idx_recipient_created_desc"),
         ]
-        permissions = (
-            ("view_all_recipients", "Может просматривать всех получателей"),
-        )
+        permissions = (("view_all_recipients", "Может просматривать всех получателей"),)
 
     def clean(self):
         """Нормализация данных перед валидацией/сохранением."""

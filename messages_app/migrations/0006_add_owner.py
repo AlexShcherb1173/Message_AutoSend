@@ -7,8 +7,10 @@ def fill_owner_messages(apps, schema_editor):
     UserModel = apps.get_model(*settings.AUTH_USER_MODEL.split("."))
     Message = apps.get_model("messages_app", "Message")
 
-    owner = UserModel.objects.filter(is_superuser=True).order_by("id").first() or \
-            UserModel.objects.order_by("id").first()
+    owner = (
+        UserModel.objects.filter(is_superuser=True).order_by("id").first()
+        or UserModel.objects.order_by("id").first()
+    )
     if owner is None:
         kwargs = {}
         if hasattr(UserModel, "username"):

@@ -1,6 +1,7 @@
 from django.db import migrations, models
 from django.conf import settings
 
+
 class Migration(migrations.Migration):
 
     dependencies = [("mailings", "0012_fill_owner")]
@@ -15,7 +16,9 @@ class Migration(migrations.Migration):
                 related_name="mailings",
                 verbose_name="Владелец",
                 help_text="Пользователь-владелец этой рассылки.",
-                null=False, blank=False, db_index=True,
+                null=False,
+                blank=False,
+                db_index=True,
             ),
         ),
     ]

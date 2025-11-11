@@ -15,7 +15,8 @@ class MessageForm(forms.ModelForm):
         Определяет:
             - модель Message, с которой связана форма;
             - редактируемые поля (subject, body);
-            - пользовательский виджет для поля body.        """
+            - пользовательский виджет для поля body."""
+
         model = Message
         fields = ["subject", "body"]
         widgets = {

@@ -4,13 +4,16 @@ import logging
 import signal
 import sys
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from django_apscheduler.jobstores import DjangoJobStore, register_events, DjangoJobExecution
+from django_apscheduler.jobstores import (
+    DjangoJobStore,
+    register_events,
+    DjangoJobExecution,
+)
 from django_apscheduler import util as aps_util
 
 from mailings.tasks import run_due_mailings
@@ -77,7 +80,8 @@ class Command(BaseCommand):
            - job_send_due_mailings — отправка рассылок (каждые interval секунд);
            - job_cleanup_old_executions — очистка истории job'ов (каждые 24 часа).
         4. Добавляет слушатели событий (ошибки, завершения, next run time и т.п.).
-        5. Запускает scheduler.start() и держит процесс живым, пока не придёт сигнал завершения."""
+        5. Запускает scheduler.start() и держит процесс живым, пока не придёт сигнал завершения.
+        """
 
         interval = options["interval"]
         tz = timezone.get_current_timezone()
@@ -91,11 +95,11 @@ class Command(BaseCommand):
             job_send_due_mailings,
             trigger=IntervalTrigger(seconds=interval),
             id="mailings_send_due",
-            max_instances=1,           # не более 1 экземпляра одновременно
-            replace_existing=True,     # заменять старую версию задачи, если перезапущено
+            max_instances=1,  # не более 1 экземпляра одновременно
+            replace_existing=True,  # заменять старую версию задачи, если перезапущено
             jobstore="default",
-            coalesce=True,             # если несколько тиков пропущены — объединяем
-            misfire_grace_time=30,     # допустимое опоздание (в секундах)
+            coalesce=True,  # если несколько тиков пропущены — объединяем
+            misfire_grace_time=30,  # допустимое опоздание (в секундах)
         )
 
         # --- Ежедневная очистка истории job-исполнений ---
@@ -139,5 +143,6 @@ class Command(BaseCommand):
         except AttributeError:
             # На Windows signal.pause() отсутствует — используем вечный sleep
             import time
+
             while True:
                 time.sleep(60)

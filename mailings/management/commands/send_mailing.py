@@ -49,14 +49,12 @@ class Command(BaseCommand):
         Args:
             parser (ArgumentParser): объект парсера команд Django."""
         parser.add_argument(
-            "mailing_id",
-            type=int,
-            help="ID рассылки, которую необходимо отправить."
+            "mailing_id", type=int, help="ID рассылки, которую необходимо отправить."
         )
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Только симуляция отправки, без реальной доставки (DRY-RUN режим)."
+            help="Только симуляция отправки, без реальной доставки (DRY-RUN режим).",
         )
 
     def handle(self, *args, **options):

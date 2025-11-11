@@ -14,6 +14,7 @@ User = get_user_model()
 
 # ---------------------------- Admin actions ----------------------------------
 
+
 @admin.action(description="Активировать выбранных пользователей")
 def activate_users(modeladmin, request, queryset):
     updated = queryset.update(is_active=True)
@@ -23,13 +24,17 @@ def activate_users(modeladmin, request, queryset):
 @admin.action(description="Деактивировать выбранных пользователей")
 def deactivate_users(modeladmin, request, queryset):
     updated = queryset.update(is_active=False)
-    modeladmin.message_user(request, f"Деактивировано: {updated}", level=messages.WARNING)
+    modeladmin.message_user(
+        request, f"Деактивировано: {updated}", level=messages.WARNING
+    )
 
 
 @admin.action(description="Назначить статус персонала (is_staff=True)")
 def make_staff(modeladmin, request, queryset):
     updated = queryset.update(is_staff=True)
-    modeladmin.message_user(request, f"Назначено staff: {updated}", level=messages.SUCCESS)
+    modeladmin.message_user(
+        request, f"Назначено staff: {updated}", level=messages.SUCCESS
+    )
 
 
 @admin.action(description="Снять статус персонала (is_staff=False)")
@@ -40,8 +45,7 @@ def remove_staff(modeladmin, request, queryset):
 
 @admin.action(description="Отправить ссылки для сброса пароля")
 def send_password_reset(modeladmin, request, queryset):
-    """
-    Шлёт письма для сброса пароля через стандартную PasswordResetForm.
+    """Шлёт письма для сброса пароля через стандартную PasswordResetForm.
     Требуется настроенный email backend и включённый django.contrib.sites.
     Письма уходят только для активных пользователей с email (стандартное поведение формы).
     """
@@ -60,36 +64,48 @@ def send_password_reset(modeladmin, request, queryset):
             )
             sent += 1
 
-    modeladmin.message_user(request, f"Отправлено писем: {sent}", level=messages.SUCCESS)
+    modeladmin.message_user(
+        request, f"Отправлено писем: {sent}", level=messages.SUCCESS
+    )
 
 
 @admin.action(description="Экспортировать пользователей в CSV")
 def export_users_csv(modeladmin, request, queryset):
-    """
-    Выгрузка CSV с колонками: id, email, is_active, is_staff, date_joined.
-    """
+    """Выгрузка CSV с колонками: id, email, is_active, is_staff, date_joined."""
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="users.csv"'
     writer = csv.writer(response, lineterminator="\n")
     writer.writerow(["id", "email", "is_active", "is_staff", "date_joined"])
     for u in queryset.iterator():
-        writer.writerow([u.pk, smart_str(u.email or ""), u.is_active, u.is_staff, u.date_joined])
+        writer.writerow(
+            [u.pk, smart_str(u.email or ""), u.is_active, u.is_staff, u.date_joined]
+        )
     return response
 
 
 # ----------------------- Admin forms (без username) --------------------------
 
+
 class UserCreationAdminForm(forms.ModelForm):
-    """
-    Форма создания пользователя в админке без поля username.
-    Делает валидацию совпадения паролей и устанавливает хэш пароля.
-    """
+    """Форма создания пользователя в админке без поля username.
+    Делает валидацию совпадения паролей и устанавливает хэш пароля."""
+
     password1 = forms.CharField(label="Пароль", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Повтор пароля", widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ("email", "avatar", "phone", "country", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")
+        fields = (
+            "email",
+            "avatar",
+            "phone",
+            "country",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "groups",
+            "user_permissions",
+        )
 
     def clean(self):
         cleaned = super().clean()
@@ -108,23 +124,32 @@ class UserCreationAdminForm(forms.ModelForm):
 
 
 class UserChangeAdminForm(forms.ModelForm):
-    """
-    Форма изменения пользователя в админке без поля username.
-    Пароль редактируется через отдельную админскую форму смены пароля.
-    """
+    """Форма изменения пользователя в админке без поля username.
+    Пароль редактируется через отдельную админскую форму смены пароля."""
+
     class Meta:
         model = User
-        fields = ("email", "avatar", "phone", "country", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")
+        fields = (
+            "email",
+            "avatar",
+            "phone",
+            "country",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "groups",
+            "user_permissions",
+        )
 
 
 # ------------------------------- Admin class ---------------------------------
 
+
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    """
-    Админка кастомного пользователя (аутентификация по email).
-    Поле username не используется; список и формы адаптированы под email.
-    """
+    """Админка кастомного пользователя (аутентификация по email).
+    Поле username не используется; список и формы адаптированы под email."""
+
     model = User
     form = UserChangeAdminForm
     add_form = UserCreationAdminForm
@@ -134,14 +159,32 @@ class UserAdmin(DjangoUserAdmin):
     search_fields = ("email", "phone", "country")
     ordering = ("-date_joined",)
     list_per_page = 25
-    actions = [activate_users, deactivate_users, make_staff, remove_staff, send_password_reset, export_users_csv]
+    actions = [
+        activate_users,
+        deactivate_users,
+        make_staff,
+        remove_staff,
+        send_password_reset,
+        export_users_csv,
+    ]
     actions_on_top = True
 
     # Убираем стандартное поле 'username' из секций
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Профиль", {"fields": ("avatar", "phone", "country")}),
-        ("Права", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (
+            "Права",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
         ("Служебное", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = (
@@ -149,7 +192,16 @@ class UserAdmin(DjangoUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "password1", "password2", "is_active", "is_staff", "is_superuser", "groups", "user_permissions"),
+                "fields": (
+                    "email",
+                    "password1",
+                    "password2",
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                ),
             },
         ),
     )

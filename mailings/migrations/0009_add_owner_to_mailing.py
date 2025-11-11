@@ -10,7 +10,9 @@ def set_owner_for_existing_mailings(apps, schema_editor):
       2) если нет — первого обычного пользователя,
       3) если в системе вообще нет пользователей — создаём технического.
     """
-    User = apps.get_model(settings.AUTH_USER_MODEL.split(".")[0], settings.AUTH_USER_MODEL.split(".")[1])
+    User = apps.get_model(
+        settings.AUTH_USER_MODEL.split(".")[0], settings.AUTH_USER_MODEL.split(".")[1]
+    )
     Mailing = apps.get_model("mailings", "Mailing")
 
     # Пытаемся найти подходящего владельца
@@ -45,8 +47,14 @@ def set_owner_for_existing_mailings(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("mailings", "0001_initial"),  # <-- поменяй на последнюю актуальную миграцию в mailings
-        ("users", "0001_initial"),     # <-- при необходимости поправь имя приложения/миграции с User
+        (
+            "mailings",
+            "0001_initial",
+        ),  # <-- поменяй на последнюю актуальную миграцию в mailings
+        (
+            "users",
+            "0001_initial",
+        ),  # <-- при необходимости поправь имя приложения/миграции с User
     ]
 
     operations = [
@@ -66,7 +74,9 @@ class Migration(migrations.Migration):
             ),
         ),
         # 2) заполняем owner для уже существующих строк
-        migrations.RunPython(set_owner_for_existing_mailings, migrations.RunPython.noop),
+        migrations.RunPython(
+            set_owner_for_existing_mailings, migrations.RunPython.noop
+        ),
         # 3) делаем поле обязательным
         migrations.AlterField(
             model_name="mailing",

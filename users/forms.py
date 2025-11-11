@@ -1,5 +1,9 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
+from django.contrib.auth.forms import (
+    UserCreationForm,
+    UserChangeForm,
+    AuthenticationForm,
+)
 from .models import User
 
 
@@ -17,4 +21,5 @@ class CustomUserChangeForm(UserChangeForm):
 
 class EmailAuthenticationForm(AuthenticationForm):
     """Переименовываем username в email для формы логина."""
+
     username = forms.EmailField(label="Email")

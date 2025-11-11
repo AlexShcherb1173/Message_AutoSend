@@ -2,12 +2,9 @@ from __future__ import annotations
 from django.contrib import messages
 from django.views import View
 from django.contrib.auth import (
-    authenticate,
     get_user_model,
     login,
-    logout,
 )
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
@@ -17,7 +14,6 @@ from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.generic import CreateView, TemplateView, DetailView, UpdateView
-from django.core.mail import send_mail
 from .utils import build_activation_link
 
 from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomUserChangeForm
@@ -27,6 +23,7 @@ from .tokens import activation_token_generator
 
 class SignUpView(CreateView):
     """Регистрация с подтверждением e-mail (письмо с токеном)."""
+
     template_name = "users/signup.html"
     form_class = CustomUserCreationForm
     success_url = reverse_lazy("users:signup_done")
@@ -47,13 +44,18 @@ class SignUpView(CreateView):
             reverse("users:activate", kwargs={"uidb64": uid, "token": token})
         )
 
-        html = render_to_string("users/email/activation.html", {"activation_link": activation_link, "user": user})
+        html = render_to_string(
+            "users/email/activation.html",
+            {"activation_link": activation_link, "user": user},
+        )
         user.email_user(
             subject="Подтверждение регистрации",
             message=f"Для активации перейдите по ссылке: {activation_link}",
             html_message=html,
         )
-        messages.info(self.request, "Мы отправили письмо с подтверждением на ваш e-mail.")
+        messages.info(
+            self.request, "Мы отправили письмо с подтверждением на ваш e-mail."
+        )
         return super().form_valid(form)
 
 
@@ -80,6 +82,7 @@ def activate(request, uidb64: str, token: str):
 
 class EmailLoginView(LoginView):
     """Вход по email."""
+
     template_name = "users/login.html"
     authentication_form = EmailAuthenticationForm
     redirect_authenticated_user = True
@@ -87,11 +90,13 @@ class EmailLoginView(LoginView):
 
 class EmailLogoutView(LogoutView):
     """Выход."""
+
     next_page = reverse_lazy("index")
 
 
 class ProfileView(LoginRequiredMixin, DetailView):
     """Просмотр профиля текущего пользователя."""
+
     model = User
     template_name = "users/profile.html"
 
@@ -101,6 +106,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Редактирование профиля текущего пользователя."""
+
     model = User
     form_class = CustomUserChangeForm
     template_name = "users/profile_edit.html"
@@ -113,14 +119,15 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, "Профиль обновлён.")
         return super().form_valid(form)
 
+
 User = get_user_model()
 
+
 class ActivateView(View):
-    """
-    Подтверждение e-mail: /users/activate/<uidb64>/<token>/
+    """Подтверждение e-mail: /users/activate/<uidb64>/<token>/
     Если токен валиден — активирует пользователя и логинит.
-    Иначе показывает предупреждение и отправляет на /users/signup/
-    """
+    Иначе показывает предупреждение и отправляет на /users/signup/"""
+
     success_url = reverse_lazy("index")  # куда вести после успеха
     failure_url = reverse_lazy("users:signup")
 

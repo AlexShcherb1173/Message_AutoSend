@@ -18,18 +18,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # === .ENV ====================================================================
 load_dotenv(BASE_DIR / ".env")
 
+
 def env_clean(name: str, default: str = "") -> str:
     """Безопасно получить строку из .env с зачисткой странных пробелов/кавычек."""
     s = os.getenv(name, default)
     if s is None:
         return default
     return (
-        s.replace("\u00A0", " ")   # NBSP
-         .replace("\u200B", "")    # zero-width
-         .strip()
-         .strip('"')
-         .strip("'")
+        s.replace("\u00a0", " ")  # NBSP
+        .replace("\u200b", "")  # zero-width
+        .strip()
+        .strip('"')
+        .strip("'")
     )
+
 
 def env_bool(name: str, default: bool = False) -> bool:
     """Булево из .env: 1/true/yes/on => True"""
@@ -38,11 +40,13 @@ def env_bool(name: str, default: bool = False) -> bool:
         return default
     return val.strip().lower() in {"1", "true", "yes", "on"}
 
+
 def env_int(name: str, default: int) -> int:
     try:
         return int(env_clean(name, str(default)))
     except (TypeError, ValueError):
         return default
+
 
 # === ПОЛЬЗОВАТЕЛЬСКАЯ МОДЕЛЬ =================================================
 AUTH_USER_MODEL = "users.User"
@@ -50,7 +54,11 @@ AUTH_USER_MODEL = "users.User"
 # === БЕЗОПАСНОСТЬ ============================================================
 SECRET_KEY = env_clean("SECRET_KEY", "change-me-dev-secret")
 DEBUG = env_bool("DEBUG", False)
-ALLOWED_HOSTS = [h.strip() for h in env_clean("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in env_clean("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    if h.strip()
+]
 
 # === ПРИЛОЖЕНИЯ ===============================================================
 INSTALLED_APPS = [
@@ -63,10 +71,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django_apscheduler",
-
     # Сторонние
     "widget_tweaks",  # pip install django-widget-tweaks
-
     # Свои
     "users",
     "clients",
@@ -128,7 +134,9 @@ DATABASES = {
 # === АУТЕНТИФИКАЦИЯ / ПАРОЛИ ==================================================
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -159,7 +167,9 @@ if DEBUG and not FORCE_SMTP:
     DEFAULT_FROM_EMAIL = env_clean("DEFAULT_FROM_EMAIL", "webmaster@localhost")
     SERVER_EMAIL = env_clean("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 else:
-    EMAIL_BACKEND = env_clean("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+    EMAIL_BACKEND = env_clean(
+        "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+    )
     EMAIL_HOST = env_clean("SMTP_HOST", "smtp.gmail.com")
     EMAIL_PORT = env_int("SMTP_PORT", 587)
     EMAIL_HOST_USER = env_clean("SMTP_USER", "")
@@ -169,9 +179,13 @@ else:
 
     # Не допускаем одновременного TLS и SSL
     if EMAIL_USE_TLS and EMAIL_USE_SSL:
-        raise RuntimeError("EMAIL_USE_TLS и EMAIL_USE_SSL не могут быть True одновременно.")
+        raise RuntimeError(
+            "EMAIL_USE_TLS и EMAIL_USE_SSL не могут быть True одновременно."
+        )
 
-    DEFAULT_FROM_EMAIL = env_clean("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com")
+    DEFAULT_FROM_EMAIL = env_clean(
+        "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com"
+    )
     SERVER_EMAIL = env_clean("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 
 # === ЛОГИН/ЛОГАУТ РЕДИРЕКТЫ ===================================================
@@ -247,9 +261,7 @@ LOGGING = {
                 "rid=%(request_id)s | user=%(user_email)s | %(message)s"
             )
         },
-        "simple": {
-            "format": "%(levelname)s %(name)s: %(message)s"
-        },
+        "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
     },
     "handlers": {
         "console": {
@@ -311,7 +323,6 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
-
         # каждый django-приложение может логировать под своим именем
         "mailings": {
             "handlers": ["console", "app_file"],
@@ -328,7 +339,6 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
-
         # системные логеры Django
         "django.request": {
             "handlers": ["console", "mail_admins", "requests_file"],
@@ -348,5 +358,3 @@ LOGGING = {
         # },
     },
 }
-
-

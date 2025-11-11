@@ -3,7 +3,13 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import (
+    ListView,
+    DetailView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+)
 
 from .models import Recipient
 from .forms import RecipientForm
@@ -11,6 +17,7 @@ from .forms import RecipientForm
 
 class OwnerFilteredMixin(LoginRequiredMixin):
     """Фильтруем клиентов по владельцу; менеджер с perm 'clients.view_all_recipients' видит всех."""
+
     def get_queryset(self):
         qs = super().get_queryset()
         u = self.request.user
@@ -21,6 +28,7 @@ class OwnerFilteredMixin(LoginRequiredMixin):
 
 class OwnerOnlyMutationMixin:
     """Изменять/удалять можно только свои записи (или суперпользователь)."""
+
     def dispatch(self, request, *args, **kwargs):
         if self.request.method.lower() in ("post", "put", "patch", "delete"):
             obj = self.get_object()
@@ -33,6 +41,7 @@ class OwnerOnlyMutationMixin:
 
 class RecipientListView(OwnerFilteredMixin, ListView):
     """Список получателей (по владельцу/или все при праве)."""
+
     model = Recipient
     template_name = "clients/recipient_list.html"
     context_object_name = "recipients"
@@ -41,6 +50,7 @@ class RecipientListView(OwnerFilteredMixin, ListView):
 
 class RecipientDetailView(OwnerFilteredMixin, DetailView):
     """Детали получателя (с учётом владельца/прав)."""
+
     model = Recipient
     template_name = "clients/recipient_detail.html"
     context_object_name = "recipient"
@@ -48,6 +58,7 @@ class RecipientDetailView(OwnerFilteredMixin, DetailView):
 
 class RecipientCreateView(LoginRequiredMixin, CreateView):
     """Создание получателя. Владелец = текущий пользователь."""
+
     model = Recipient
     form_class = RecipientForm
     template_name = "clients/recipient_form.html"
@@ -63,6 +74,7 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
 
 class RecipientUpdateView(OwnerFilteredMixin, OwnerOnlyMutationMixin, UpdateView):
     """Редактирование только своего получателя (или суперпользователь)."""
+
     model = Recipient
     form_class = RecipientForm
     template_name = "clients/recipient_form.html"
@@ -75,6 +87,7 @@ class RecipientUpdateView(OwnerFilteredMixin, OwnerOnlyMutationMixin, UpdateView
 
 class RecipientDeleteView(OwnerFilteredMixin, OwnerOnlyMutationMixin, DeleteView):
     """Удаление только своего получателя (или суперпользователь)."""
+
     model = Recipient
     template_name = "clients/recipient_confirm_delete.html"
     success_url = reverse_lazy("clients:recipient_list")

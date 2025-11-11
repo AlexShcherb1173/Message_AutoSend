@@ -9,12 +9,10 @@ from .models import Message
 
 @admin.action(description="Дублировать выбранные сообщения")
 def duplicate_messages(modeladmin, request, queryset):
-    """
-    Создаёт копию каждого сообщения.
+    """Создаёт копию каждого сообщения.
     Тема дополнена суффиксом ' (копия)'.
     Создаём новые экземпляры через Message.objects.create(),
-    чтобы не мутировать исходный объект и не полагаться на obj.pk = None.
-    """
+    чтобы не мутировать исходный объект и не полагаться на obj.pk = None."""
     created = 0
     for src in queryset.iterator():
         Message.objects.create(
@@ -32,10 +30,8 @@ def duplicate_messages(modeladmin, request, queryset):
 
 @admin.action(description="Экспортировать выбранные сообщения в CSV")
 def export_messages_csv(modeladmin, request, queryset):
-    """
-    Экспорт выбранных сообщений в CSV.
-    Используем lineterminator='\\n' для корректной совместимости с Windows.
-    """
+    """Экспорт выбранных сообщений в CSV.
+    Используем lineterminator='\\n' для корректной совместимости с Windows."""
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="messages.csv"'
 
@@ -43,27 +39,27 @@ def export_messages_csv(modeladmin, request, queryset):
     writer.writerow(["id", "subject", "created_at", "updated_at", "body"])
 
     for m in queryset.iterator():
-        writer.writerow([
-            m.pk,
-            smart_str(m.subject or ""),
-            m.created_at,
-            m.updated_at,
-            smart_str(m.body or ""),
-        ])
+        writer.writerow(
+            [
+                m.pk,
+                smart_str(m.subject or ""),
+                m.created_at,
+                m.updated_at,
+                smart_str(m.body or ""),
+            ]
+        )
 
     return response
 
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    """
-    Админ-интерфейс для модели Message.
-
+    """Админ-интерфейс для модели Message.
     • Список: тема, дата создания/изменения
     • Поиск: по теме и телу письма
     • Фильтры: по дате создания
-    • Экшены: дублирование, экспорт в CSV
-    """
+    • Экшены: дублирование, экспорт в CSV"""
+
     list_display = ("subject", "created_at", "updated_at")
     search_fields = ("subject", "body")
     list_filter = ("created_at",)
