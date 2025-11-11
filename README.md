@@ -5,138 +5,121 @@
 
 Минимальные версии: Python 3.12+, Django 5.2+, PostgreSQL 14+, Redis 6+.
 
-Содержание
+### Содержание
 
-Структура проекта
+- [Структура проекта](#структура-проекта)
+- [Быстрый старт](#быстрый-старт)
+  - [Установка зависимостей](#установка-зависимостей)
+  - [Настройка окружения и переменные](#настройка-окружения-и-переменные)
+  - [Инициализация БД](#инициализация-бд)
+  - [Запуск приложения](#запуск-приложения)
+- [Кеширование](#кеширование)
+- [Логирование](#логирование)
+- [Автоматическая отправка по расписанию](#автоматическая-отправка-по-расписанию)
+- [PowerShell/Batch скрипты](#powershellbatch-скрипты)
+- [Кастомные Django-команды](#кастомные-django-команды)
+- [Функционал приложений](#функционал-приложений)
+  - [clients](#clients)
+  - [messages_app](#messages_app)
+  - [mailings](#mailings)
+  - [users](#users)
+- [Полезные команды](#полезные-команды)
+- [Траблшутинг](#траблшутинг)
 
-Быстрый старт
-
-Установка зависимостей
-
-Настройка окружения и переменные
-
-Инициализация БД
-
-Запуск приложения
-
-Кеширование
-
-Логирование
-
-Автоматическая отправка по расписанию
-
-PowerShell/Batch скрипты
-
-Кастомные Django-команды
-
-Функционал приложений
-
-clients
-
-messages_app
-
-mailings
-
-users
-
-Полезные команды
-
-Траблшутинг
-
-Структура проекта
-Message_AutoSend/
-├─ config/
-│  ├─ settings.py
-│  ├─ urls.py
-│  ├─ wsgi.py
-│  └─ asgi.py
-├─ common/
-│  ├─ __init__.py
-│  ├─ middleware.py          # CurrentRequestMiddleware (request_id, user email)
-│  ├─ mixins.py              # ClientCacheMixin (Cache-Control/Last-Modified)
-│  ├─ request_storage.py     # thread-local хранение request
-│  └─ logging_filters.py     # RequestContextFilter (request_id, user_email)
-├─ clients/
-│  ├─ models.py              # Recipient(owner, email, full_name, comment, ...)
-│  ├─ views.py, urls.py, forms.py, admin.py, templates/clients/
+### Структура проекта
+Message_AutoSend/  
+├─ config/  
+│  ├─ settings.py      
+│  ├─ urls.py    
+│  ├─ wsgi.py      
+│  └─ asgi.py  
+├─ common/        
+│  ├─ __init__.py  
+│  ├─ middleware.py          # CurrentRequestMiddleware (request_id, user email)  
+│  ├─ mixins.py              # ClientCacheMixin (Cache-Control/Last-Modified)    
+│  ├─ request_storage.py     # thread-local хранение request  
+│  └─ logging_filters.py     # RequestContextFilter (request_id, user_email)   
+├─ clients/  
+│  ├─ models.py              # Recipient(owner, email, full_name, comment, ...)  
+│  ├─ views.py, urls.py, forms.py, admin.py, templates/clients/  
+│  └─ migrations/  
+├─ messages_app/      
+│  ├─ models.py              # Message(owner, subject, body, timestamps)  
+│  ├─ views.py, urls.py, forms.py, admin.py, templates/messages_app/                     
 │  └─ migrations/
-├─ messages_app/
-│  ├─ models.py              # Message(owner, subject, body, timestamps)
-│  ├─ views.py, urls.py, forms.py, admin.py, templates/messages_app/
-│  └─ migrations/
-├─ mailings/
-│  ├─ models.py              # Mailing(owner, message, recipients m2m, status, ...)
-│  │                         # MailingLog, MailingAttempt, AttemptStatus Enum
-│  ├─ services.py            # send_mailing() с логированием и аудитом
-│  ├─ views.py               # списки, детали, отчёты, ручной запуск
-│  ├─ urls.py, forms.py, admin.py, templates/mailings/
-│  ├─ management/
-│  │  └─ commands/
-│  │     ├─ run_scheduler.py         # запуск APScheduler (встроенный планировщик)
-│  │     ├─ send_due_mailings.py     # отправка рассылок «которые пора»
-│  │     ├─ send_mailing.py          # отправка конкретной рассылки по id
-│  │     ├─ seed_demo.py             # демо-данные
-│  │     └─ seed_managers.py         # создание менеджерских аккаунтов/прав
-│  └─ migrations/
-├─ templates/
-│  ├─ base.html
-│  └─ ... (общие шаблоны)
-├─ static/
-├─ logs/
-│  ├─ app/
-│  │  ├─ app_info.log
-│  │  ├─ app_errors.log
-│  │  └─ app_sql.log
-│  └─ scheduler/
-│     ├─ run_YYYYMMDD.log
-│     └─ jobs_YYYYMMDD.log
-├─ scripts/
-│  ├─ run_scheduler.ps1
-│  ├─ stop_scheduler.ps1
-│  ├─ tick_send_due_mailings.ps1
-│  ├─ run_scheduler.bat
-│  ├─ stop_scheduler.bat
-│  └─ tick_send_due_mailings.bat
+├─ mailings/  
+│  ├─ models.py              # Mailing(owner, message, recipients m2m, status, ...  
+│  │                         # MailingLog, MailingAttempt, AttemptStatus Enum  
+│  ├─ services.py            # send_mailing() с логированием и аудитом  
+│  ├─ views.py               # списки, детали, отчёты, ручной запуск  
+│  ├─ urls.py, forms.py, admin.py, templates/mailings/  
+│  ├─ management/  
+│  │  └─ commands/  
+│  │     ├─ run_scheduler.py         # запуск APScheduler (встроенный планировщик)  
+│  │     ├─ send_due_mailings.py     # отправка рассылок «которые пора»  
+│  │     ├─ send_mailing.py          # отправка конкретной рассылки по id  
+│  │     ├─ seed_demo.py             # демо-данные  
+│  │     └─ seed_managers.py         # создание менеджерских аккаунтов/прав  
+│  └─ migrations/  
+├─ templates/  
+│  ├─ base.html  
+│  └─ ... (общие шаблоны)  
+├─ static/  
+├─ logs/  
+│  ├─ app/    
+│  │  ├─ app_info.  
+│  │  ├─ app_errors.log  
+│  │  └─ app_sql.log  
+│  └─ scheduler/  
+│     ├─ run_YYYYMMDD.log  
+│     └─ jobs_YYYYMMDD.log  
+├─ scripts/  
+│  ├─ run_scheduler.ps1  
+│  ├─ stop_scheduler.ps1  
+│  ├─ tick_send_due_mailings.ps1  
+│  ├─ run_scheduler.bat  
+│  ├─ stop_scheduler.bat  
+│  └─ tick_send_due_mailings.bat  
 ├─ manage.py
 ├─ pyproject.toml / poetry.lock (если используете Poetry)
 └─ requirements.txt (если используете pip)
 
-Быстрый старт
-Установка зависимостей
+### Быстрый старт
+#### Установка зависимостей
 
-Вариант A: Poetry (рекомендовано)
+##### Вариант A: Poetry (рекомендовано)
 
-# из корня проекта
+###### из корня проекта
 poetry env use 3.13
 poetry install
 poetry run python --version
 
 
-Вариант B: venv + pip
+##### Вариант B: venv + pip
 
 py -3.13 -m venv .venv
 .\.venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-Настройка окружения и переменные
+#### Настройка окружения и переменные
 
 Создайте .env в корне или настройте переменные окружения:
 
-# Django
+##### Django
 DEBUG=True
 SECRET_KEY=replace-me
 
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Database (PostgreSQL)
+##### Database (PostgreSQL)
 DB_NAME=message_autosend
 DB_USER=postgres
 DB_PASSWORD=your_password
 DB_HOST=127.0.0.1
 DB_PORT=5432
 
-# Email (SMTP)
+##### Email (SMTP)
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -146,11 +129,11 @@ SMTP_PASSWORD=app_password
 DEFAULT_FROM_EMAIL=robot@yourdomain.com
 SERVER_EMAIL=errors@yourdomain.com
 
-# Redis cache
+##### Redis cache
 REDIS_URL=redis://127.0.0.1:6379/1
 
 
-В settings.py уже прописаны:
+##### В settings.py уже прописаны:
 
 CACHES с django.core.cache.backends.redis.RedisCache и LOCATION из REDIS_URL
 
@@ -160,28 +143,28 @@ LOGGING настроен на файловые обработчики в logs/
 
 Убедитесь, что Redis запущен локально (127.0.0.1:6379) и база 1 доступна.
 
-Инициализация БД
-# Активируйте окружение (Poetry или venv), затем:
+#### Инициализация БД
+##### Активируйте окружение (Poetry или venv), затем:
 python manage.py migrate
 python manage.py createsuperuser
 
 
-Опционально — наполнить демо-данными:
+###### Опционально — наполнить демо-данными:
 
 python manage.py seed_demo
 python manage.py seed_managers
 
-Запуск приложения
-# Poetry
+#### Запуск приложения
+##### Poetry
 poetry run python manage.py runserver
 
-# Либо venv
+###### Либо venv
 python manage.py runserver
 
 
 Открывайте: http://127.0.0.1:8000
 
-Кеширование
+### Кеширование
 
 Серверный кеш — Redis по адресу redis://127.0.0.1:6379/1.
 
@@ -197,7 +180,7 @@ Last-Modified: ... (если доступна дата последнего из
 
 Промахи/попадания кеша можно видеть по косвенным признакам в логах и заголовках ответов.
 
-Логирование
+### Логирование
 
 Логи пишутся в logs/:
 
@@ -209,13 +192,13 @@ logs/app/app_sql.log — SQL (при DEBUG/отладочном режиме)
 
 logs/scheduler/run_*.log, logs/scheduler/jobs_*.log — работа планировщика
 
-В лог-записях доступны:
+##### В лог-записях доступны:
 
 request_id — ID запроса (ставится в CurrentRequestMiddleware)
 
 user_email — e-mail текущего пользователя или -
 
-Примеры логирования в коде (уже добавлено в mailings/services.py):
+######Примеры логирования в коде (уже добавлено в mailings/services.py):
 
 import logging
 log = logging.getLogger("mailings")
@@ -224,10 +207,10 @@ log.info("Start sending", extra={"mailing_id": mailing.id, "total": total, "dry_
 log.warning("Send returned 0", extra={"recipient": email})
 log.exception("SMTP failed", extra={"recipient": email})
 
-Автоматическая отправка по расписанию
+### Автоматическая отправка по расписанию
 
 Для фона используется django-apscheduler.
-Стандартная схема:
+###### Стандартная схема:
 
 Регистрация задач (jobs) внутри команды run_scheduler
 
@@ -243,7 +226,7 @@ PowerShell
 
 run_scheduler.ps1 — старт планировщика:
 
-# запуск из корня проекта
+###### запуск из корня проекта
 .\scripts\run_scheduler.ps1
 
 
@@ -280,41 +263,41 @@ scripts\tick_send_due_mailings.bat
 
 Все скрипты предполагают активированное окружение (Poetry или venv) или сами вызывают poetry run/.\.venv\Scripts\activate && ... внутри.
 
-Кастомные Django-команды
+### Кастомные Django-команды
 
 Команды находятся в mailings/management/commands/:
 
 run_scheduler.py
-Запускает планировщик, регистрирует job’ы (например, send_due_mailings каждые X минут).
+###### Запускает планировщик, регистрирует job’ы (например, send_due_mailings каждые X минут).
 
 python manage.py run_scheduler
 
 
 send_due_mailings.py
-Находит все рассылки, у которых наступило время отправки (start_at <= now, статус «Запущена» и т.д.), и вызывает отправку.
+###### Находит все рассылки, у которых наступило время отправки (start_at <= now, статус «Запущена» и т.д.), и вызывает отправку.
 
 python manage.py send_due_mailings
 
 
 send_mailing.py
-Отправляет конкретную рассылку по идентификатору:
+###### Отправляет конкретную рассылку по идентификатору:
 
 python manage.py send_mailing --id 123 [--dry-run]
 
 
 seed_demo.py
-Создаёт демо-данные: пользователей, получателей, сообщения, пару рассылок.
+###### Создаёт демо-данные: пользователей, получателей, сообщения, пару рассылок.
 
 python manage.py seed_demo
 
 
 seed_managers.py
-Создаёт менеджерские учётки и даёт им права (например, mailings.view_all_mailings и, при необходимости, mailings.disable_mailing).
+###### Создаёт менеджерские учётки и даёт им права (например, mailings.view_all_mailings и, при необходимости, mailings.disable_mailing).
 
 python manage.py seed_managers
 
-Функционал приложений
-clients
+### Функционал приложений
+#### clients
 
 Recipient — получатель рассылок.
 
@@ -328,7 +311,7 @@ email, full_name, comment, timestamps
 
 Шаблоны: templates/clients/...
 
-messages_app
+#### messages_app
 
 Message — текст письма.
 
@@ -336,9 +319,9 @@ owner, subject, body, timestamps
 
 CRUD и детальная страница
 
-Проверка прав редактирования (владелец/суперпользователь)
+##### Проверка прав редактирования (владелец/суперпользователь)
 
-mailings
+#### mailings
 
 Mailing — кампания/рассылка.
 
@@ -354,7 +337,7 @@ MailingAttempt — агрегат попытки отправки (ручной/
 
 mailing, status (SUCCESS/FAIL), server_response, triggered_by
 
-Отчёты и статистика:
+##### Отчёты и статистика:
 
 /mailings/stats/ — общая статистика по кампаниям (видимость как у данных)
 
@@ -362,7 +345,7 @@ mailing, status (SUCCESS/FAIL), server_response, triggered_by
 
 Ручной запуск из карточки рассылки (с dry-run для теста)
 
-users
+#### users
 
 Кастомная модель пользователя users.User (e-mail как логин), профиль, страница профиля.
 
@@ -372,27 +355,27 @@ mailings.view_all_mailings — менеджер видит все рассылк
 
 mailings.disable_mailing — может принудительно завершить рассылку.
 
-Полезные команды
-# Миграции
+### Полезные команды
+#### Миграции
 python manage.py makemigrations
 python manage.py migrate
 
-# Создание суперпользователя
+#### Создание суперпользователя
 python manage.py createsuperuser
 
-# Демоданные / менеджеры
+#### Демоданные / менеджеры
 python manage.py seed_demo
 python manage.py seed_managers
 
-# Планировщик
+#### Планировщик
 python manage.py run_scheduler
 python manage.py send_due_mailings
 python manage.py send_mailing --id <MAILING_ID> [--dry-run]
 
-# Проверка статуса
+#### Проверка статуса
 python manage.py showmigrations
 
-Траблшутинг
+### Траблшутинг
 
 ModuleNotFoundError: No module named 'redis'
 Установите клиент: pip install redis (или poetry add redis).
