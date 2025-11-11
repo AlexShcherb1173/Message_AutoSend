@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Отчёт по рассылкам — {{ target_user.email|default:target_user.username }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Отчёт по рассылкам пользователя: {{ target_user.get_full_name|default:target_user }}</h1>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card p-3">Всего рассылок: <strong>{{ summary.total_mailings }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">Активных: <strong>{{ summary.active_mailings }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">Завершённых: <strong>{{ summary.finished_mailings }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">Уник. получателей: <strong>{{ summary.recipients_total }}</strong></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card p-3">Попыток всего: <strong>{{ summary.attempts_total }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">OK попыток: <strong class="text-success">{{ summary.attempts_ok }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">FAIL попыток: <strong class="text-danger">{{ summary.attempts_fail }}</strong></div></div>
+  <div class="col-md-3"><div class="card p-3">Отправлено писем: <strong>{{ summary.sent_total }}</strong></div></div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Статус</th>
+          <th>Окно</th>
+          <th>Тема</th>
+          <th class="text-end">Получателей</th>
+          <th class="text-end">SENT</th>
+          <th class="text-end">ERROR</th>
+          <th class="text-end">TRY OK</th>
+          <th class="text-end">TRY FAIL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mailings %}
+        <tr>
+          <td><a href="{% url 'mailings:detail' m.pk %}">#{{ m.id }}</a></td>
+          <td>{{ m.status }}</td>
+          <td class="small text-secondary">{{ m.start_at|date:"Y-m-d H:i" }} — {{ m.end_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ m.message.subject|default:"—" }}</td>
+          <td class="text-end">{{ m.recipients_total }}</td>
+          <td class="text-end text-success">{{ m.sent_total }}</td>
+          <td class="text-end text-danger">{{ m.failed_total }}</td>
+          <td class="text-end">{{ m.attempt_ok_total }}</td>
+          <td class="text-end">{{ m.attempt_fail_total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="text-center py-4 text-muted">У пользователя нет рассылок.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

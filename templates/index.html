@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Панель рассылок</h1>
+
+  {# Статкарточки #}
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Все рассылки</h5>
+          <p class="display-6 mb-0">{{ total_mailings }}</p>
+        </div>
+        <div class="card-footer bg-transparent border-0">
+          <a class="btn btn-outline-primary" href="{% url 'mailings:list' %}">К списку рассылок</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Активные («Запущена»)</h5>
+          <p class="display-6 mb-0">{{ active_mailings }}</p>
+        </div>
+        <div class="card-footer bg-transparent border-0">
+          <a class="btn btn-outline-primary" href="{% url 'mailings:list' %}?status=Запущена">Показать активные</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Уникальные получатели</h5>
+          <p class="display-6 mb-0">{{ unique_recipients }}</p>
+        </div>
+        <div class="card-footer bg-transparent border-0">
+          <a class="btn btn-outline-secondary" href="{% url 'clients:recipient_list' %}">К получателям</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  {# Быстрые действия #}
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{% url 'mailings:create' %}">+ Новая рассылка</a>
+    <a class="btn btn-outline-secondary" href="{% url 'messages_app:message_create' %}">+ Новое сообщение</a>
+    <a class="btn btn-outline-dark" href="{% url 'clients:recipient_create' %}">+ Новый получатель</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+[
+  {
+    "model": "clients.recipient",
+    "pk": 1,
+    "fields": {
+      "email": "alice@example.com",
+      "full_name": "Алиса Смирнова",
+      "comment": "VIP-клиент",
+      "created_at": "2025-10-01T09:00:00Z",
+      "updated_at": "2025-10-01T09:00:00Z"
+    }
+  },
+  {
+    "model": "clients.recipient",
+    "pk": 2,
+    "fields": {
+      "email": "bob@example.com",
+      "full_name": "Боб Иванов",
+      "comment": "",
+      "created_at": "2025-10-01T09:05:00Z",
+      "updated_at": "2025-10-01T09:05:00Z"
+    }
+  },
+  {
+    "model": "clients.recipient",
+    "pk": 3,
+    "fields": {
+      "email": "carol@example.com",
+      "full_name": "Каролина Петрова",
+      "comment": "Подписчик рассылки №1",
+      "created_at": "2025-10-01T09:10:00Z",
+      "updated_at": "2025-10-01T09:10:00Z"
+    }
+  },
+  {
+    "model": "clients.recipient",
+    "pk": 4,
+    "fields": {
+      "email": "dave@example.com",
+      "full_name": "Давид Шульц",
+      "comment": "",
+      "created_at": "2025-10-01T09:15:00Z",
+      "updated_at": "2025-10-01T09:15:00Z"
+    }
+  },
+  {
+    "model": "clients.recipient",
+    "pk": 5,
+    "fields": {
+      "email": "eve@example.com",
+      "full_name": "Ева Ким",
+      "comment": "Предпочитает рассылку по будням",
+      "created_at": "2025-10-01T09:20:00Z",
+      "updated_at": "2025-10-01T09:20:00Z"
+    }
+  }
+]
