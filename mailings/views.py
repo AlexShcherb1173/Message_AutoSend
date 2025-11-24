@@ -25,9 +25,14 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
 from .forms import MailingForm
-from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 from .services import send_mailing
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
+from django.db.models import Count, Q
+
 from common.mixins import ClientCacheMixin
+from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 
 
 # ===== Миксины ограничения доступа (владельцы/менеджеры) =====
@@ -244,17 +249,27 @@ def mailing_send(request, pk: int):
 @method_decorator(
     cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch"
 )
-class MailingUserReportView(ClientCacheMixin, TemplateView):
-    """Персональный отчёт по рассылкам владельца.
+
+class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
+    """
+    Персональный отчёт по рассылкам владельца.
+
+    - Только для авторизованных пользователей (анонимов перекидывает на LOGIN_URL).
     - По умолчанию показывает отчёт для текущего пользователя.
-    - Менеджер/суперпользователь может передать ?user=<id> чтобы смотреть чужие.
+    - Менеджер/суперпользователь может передать ?user=<id>, чтобы смотреть чужие.
     - Серверный кэш: 5 минут (Redis через Django cache).
-    - Клиентский кэш: заголовок Cache-Control (по ClientCacheMixin)."""
+    - Клиентский кэш: заголовок Cache-Control (через ClientCacheMixin).
+    """
 
     template_name = "mailings/user_report.html"
     cache_seconds = 120  # клиентский кэш (браузер) — 2 минуты
 
     def _target_user(self):
+        """
+        Возвращает пользователя, для которого строим отчёт.
+        Обычный пользователь — всегда сам.
+        Менеджер/суперпользователь может указать ?user=<id>.
+        """
         u = self.request.user
         if u.is_superuser or u.has_perm("mailings.view_all_mailings"):
             user_id = self.request.GET.get("user")
@@ -294,16 +309,21 @@ class MailingUserReportView(ClientCacheMixin, TemplateView):
                 ).count(),
                 "recipients_total": recipients_total,
                 "attempts_total": attempts_qs.count(),
-                "attempts_ok": attempts_qs.filter(status=AttemptStatus.SUCCESS).count(),
-                "attempts_fail": attempts_qs.filter(status=AttemptStatus.FAIL).count(),
+                "attempts_ok": attempts_qs.filter(
+                    status=AttemptStatus.SUCCESS
+                ).count(),
+                "attempts_fail": attempts_qs.filter(
+                    status=AttemptStatus.FAIL
+                ).count(),
                 "sent_total": logs_qs.filter(status="SENT").count(),
                 "errors_total": logs_qs.filter(status="ERROR").count(),
             }
-            cache.set(cache_key, summary, 300)  # 5 минут
+            # 5 минут в Redis
+            cache.set(cache_key, summary, 300)
 
         ctx["summary"] = summary
 
-        # Построчная статистика по рассылкам (кверисет не кладём в Redis — отдаём «живой» QS)
+        # Построчная статистика по рассылкам (живой queryset, без кладки в Redis)
         ctx["mailings"] = (
             Mailing.objects.filter(owner=target)
             .annotate(

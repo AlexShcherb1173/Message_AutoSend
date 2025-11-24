@@ -82,17 +82,6 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
-# === MIDDLEWARE ===============================================================
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
 # === URL / ШАБЛОНЫ / WSGI ====================================================
 ROOT_URLCONF = "config.urls"
 
@@ -162,6 +151,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 FORCE_SMTP = env_bool("FORCE_SMTP", False)
 
 if DEBUG and not FORCE_SMTP:
+    # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
     EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
     EMAIL_FILE_PATH = BASE_DIR / "sent_emails"
     DEFAULT_FROM_EMAIL = env_clean("DEFAULT_FROM_EMAIL", "webmaster@localhost")
@@ -213,12 +203,9 @@ CACHES = {
     }
 }
 
-# Включим Conditional GET + ETag (для 304 Not Modified)
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "common.middleware.RequestContextMiddleware",
     "common.middleware.CurrentRequestMiddleware",
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -226,8 +213,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.http.ConditionalGetMiddleware",
-    "django.middleware.cache.FetchFromCacheMiddleware",
 ]
+
+
 
 USE_ETAGS = True  # пусть Django проставляет ETag на полноценные ответы
 

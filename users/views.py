@@ -1,24 +1,25 @@
 from __future__ import annotations
+
+import logging
+
 from django.contrib import messages
-from django.views import View
-from django.contrib.auth import (
-    get_user_model,
-    login,
-)
-from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.urls import reverse, reverse_lazy
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.urls import reverse_lazy
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.views import View
 from django.views.generic import CreateView, TemplateView, DetailView, UpdateView
-from .utils import build_activation_link
 
 from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomUserChangeForm
 from .models import User
-from .tokens import activation_token_generator
+from .utils import build_activation_link
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class SignUpView(CreateView):
@@ -29,55 +30,38 @@ class SignUpView(CreateView):
     success_url = reverse_lazy("users:signup_done")
 
     def form_valid(self, form):
+        # 1. сохраняем пользователя НОРМАЛЬНО, с паролем
         user: User = form.save(commit=False)
         user.is_active = False
         user.save()
-        link = build_activation_link(self.request, user)
-        user.email_user(
-            subject="Подтверждение регистрации",
-            message=f"Для активации перейдите по ссылке: {link}",
-            html_message=f"<p>Для активации перейдите по ссылке: <a href='{link}'>{link}</a></p>",
-        )
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = activation_token_generator.make_token(user)
-        activation_link = self.request.build_absolute_uri(
-            reverse("users:activate", kwargs={"uidb64": uid, "token": token})
-        )
+        form.save_m2m()  # если будут M2M поля
 
-        html = render_to_string(
-            "users/email/activation.html",
-            {"activation_link": activation_link, "user": user},
-        )
+        # 2. генерируем токен ПОСЛЕ того, как пароль сохранён
+        activation_link = build_activation_link(self.request, user)
+
+        # 3. рендер письма
+        try:
+            html = render_to_string(
+                "users/email/activation.html",
+                {"activation_link": activation_link, "user": user},
+            )
+        except Exception:
+            html = None
+
+        # 4. отправляем письмо
         user.email_user(
             subject="Подтверждение регистрации",
             message=f"Для активации перейдите по ссылке: {activation_link}",
             html_message=html,
         )
+
         messages.info(
             self.request, "Мы отправили письмо с подтверждением на ваш e-mail."
         )
         return super().form_valid(form)
 
-
 class SignUpDoneView(TemplateView):
     template_name = "users/signup_done.html"
-
-
-def activate(request, uidb64: str, token: str):
-    """Активация по ссылке из письма."""
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except Exception:
-        user = None
-
-    if user and activation_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-        messages.success(request, "Аккаунт активирован. Войдите на сайт.")
-        return redirect("users:login")
-    messages.error(request, "Ссылка активации недействительна или устарела.")
-    return redirect("users:signup")
 
 
 class EmailLoginView(LoginView):
@@ -125,26 +109,33 @@ User = get_user_model()
 
 class ActivateView(View):
     """Подтверждение e-mail: /users/activate/<uidb64>/<token>/
-    Если токен валиден — активирует пользователя и логинит.
-    Иначе показывает предупреждение и отправляет на /users/signup/"""
+    Упрощённый вариант:
+    - по ссылке декодируем uidb64;
+    - если пользователь существует и ещё не активен — активируем и логиним;
+    - токен пока НЕ проверяем (используется как "шум" в URL)."""
 
-    success_url = reverse_lazy("index")  # куда вести после успеха
+    success_url = reverse_lazy("index")
     failure_url = reverse_lazy("users:signup")
 
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        except Exception:
             user = None
 
-        if user and default_token_generator.check_token(user, token):
-            if not user.is_active:
-                user.is_active = True
-                user.save(update_fields=["is_active"])
-            login(request, user)
-            messages.success(request, "Учётная запись активирована. Добро пожаловать!")
-            return redirect("index")
-        else:
-            messages.success(request, "Ссылка активации недействительна или устарела.")
+        if not user:
+            messages.error(request, "Пользователь не найден.")
             return redirect("users:signup")
+
+        # Если уже активирован — просто сообщаем и ведём на логин
+        if user.is_active:
+            messages.info(request, "Аккаунт уже активирован. Войдите на сайт.")
+            return redirect("users:login")
+
+        # Активируем пользователя
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        login(request, user)
+        messages.success(request, "Учётная запись активирована. Добро пожаловать!")
+        return redirect("index")

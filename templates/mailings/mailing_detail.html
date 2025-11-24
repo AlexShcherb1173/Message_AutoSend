@@ -58,7 +58,7 @@
         <a class="btn btn-outline-danger" href="{% url 'mailings:delete' mailing.id %}">🗑️ Удалить</a>
       {% endif %}
 
-      {% if request.user.has_perm('mailings.disable_mailing') %}
+      {% if perms.mailings.disable_mailing %}
         <form method="post" action="{% url 'mailings:disable' mailing.id %}" class="d-inline">
           {% csrf_token %}
           <button class="btn btn-warning" type="submit">Отключить (менеджер)</button>

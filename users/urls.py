@@ -18,7 +18,6 @@ urlpatterns = [
     path("logout/", EmailLogoutView.as_view(), name="logout"),
     path("profile/", ProfileView.as_view(), name="profile"),
     path("profile/edit/", ProfileUpdateView.as_view(), name="profile_edit"),
-    # восстановление пароля (станут namespaced: users:password_reset, ...)
     path("", include("django.contrib.auth.urls")),
     re_path(
         r"^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>.+)/$",

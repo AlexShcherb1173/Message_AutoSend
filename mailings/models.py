@@ -20,16 +20,13 @@ class MailingStatus(models.TextChoices):
 
 # ====== Статистический QuerySet/Manager по рассылкам (агрегаты для списков/админки) ======
 class MailingQuerySet(models.QuerySet):
-    """
-    QS с аннотациями сводной статистики по логам и попыткам.
-
+    """QS с аннотациями сводной статистики по логам и попыткам.
     Аннотации (int):
       - sent_messages:    кол-во логов со status='SENT'        (реально ушедшие письма)
       - failed_messages:  кол-во логов со status='ERROR'       (ошибки на письмах)
       - dry_run_messages: кол-во логов со status='DRY_RUN'     (тестовые «псевдо»-отправки)
       - attempt_success:  кол-во попыток со статусом 'Успешно'
-      - attempt_fail:     кол-во попыток со статусом 'Не успешно'
-    """
+      - attempt_fail:     кол-во попыток со статусом 'Не успешно'"""
 
     def with_stats(self) -> "MailingQuerySet":
         return self.annotate(
@@ -48,10 +45,8 @@ class MailingManager(models.Manager.from_queryset(MailingQuerySet)):
 
 
 class Mailing(models.Model):
-    """
-    «Рассылка» — окно времени, сообщение, список получателей, статус и владелец.
-    Поле owner — кто создал рассылку; используется для ограничения доступа.
-    """
+    """«Рассылка» — окно времени, сообщение, список получателей, статус и владелец.
+    Поле owner — кто создал рассылку; используется для ограничения доступа."""
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -200,12 +195,9 @@ class Mailing(models.Model):
 
 
 class MailingLog(models.Model):
-    """
-    Лог по каждому получателю (почтовая «телеметрия»).
-
+    """Лог по каждому получателю (почтовая «телеметрия»).
     Важный момент: поле `triggered_by` хранит «кто инициировал отправку»
-    (обычно email пользователя). На основании этого считаем персональные отчёты.
-    """
+    (обычно email пользователя). На основании этого считаем персональные отчёты."""
 
     mailing = models.ForeignKey(
         Mailing, on_delete=models.CASCADE, related_name="logs", verbose_name="Рассылка"
@@ -251,12 +243,9 @@ class AttemptStatus(models.TextChoices):
 
 
 class MailingAttempt(models.Model):
-    """
-    Агрегированная попытка выполнения рассылки (батч/итерация, а не конкретный адресат).
-
+    """Агрегированная попытка выполнения рассылки (батч/итерация, а не конкретный адресат).
     Поле `triggered_by` фиксирует инициатора попытки (по email/логину),
-    чтобы формировать персональные отчёты без связи на User.
-    """
+    чтобы формировать персональные отчёты без связи на User."""
 
     mailing = models.ForeignKey(
         Mailing,
