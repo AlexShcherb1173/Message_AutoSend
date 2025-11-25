@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Удалить получателя — MessageSend{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Удалить получателя</h1>
+
+{# Предупреждение об удалении #}
+<div class="alert alert-warning">
+  Вы уверены, что хотите удалить <strong>{{ object.full_name }}</strong> ({{ object.email }})?
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">Удалить</button>
+  <a class="btn btn-outline-secondary" href="{% url 'clients:recipient_list' %}">Отмена</a>
+  {# ↩ Кнопка на главную #}
+  <a class="btn btn-link" href="{% url 'index' %}">На главную</a>
+</form>
+{% endblock %}

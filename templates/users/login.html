@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Вход</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    {{ form.username|add_class:"form-control" }}
+    {{ form.username.errors }}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Пароль</label>
+    {{ form.password|add_class:"form-control" }}
+    {{ form.password.errors }}
+  </div>
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Войти</button>
+    <a class="btn btn-link" href="{% url 'password_reset' %}">Забыли пароль?</a>
+    <a class="btn btn-outline-secondary" href="{% url 'index' %}">На главную</a>
+  </div>
+</form>
+<hr>
+<p class="mb-0">Нет аккаунта? <a href="{% url 'users:signup' %}">Зарегистрироваться</a></p>
+{% endblock %}
