@@ -12,11 +12,10 @@ from django.urls import reverse_lazy
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views import View
-from django.views.generic import (CreateView, DetailView, TemplateView,
-                                  UpdateView)
+from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
 
-from .forms import (CustomUserChangeForm, CustomUserCreationForm,
-                    EmailAuthenticationForm)
+from .forms import CustomUserChangeForm, CustomUserCreationForm, EmailAuthenticationForm
+
 # from .models import User
 from .utils import build_activation_link
 
@@ -57,9 +56,7 @@ class SignUpView(CreateView):
             html_message=html,
         )
 
-        messages.info(
-            self.request, "Мы отправили письмо с подтверждением на ваш e-mail."
-        )
+        messages.info(self.request, "Мы отправили письмо с подтверждением на ваш e-mail.")
         return super().form_valid(form)
 
 

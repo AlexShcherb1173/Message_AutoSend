@@ -5,8 +5,7 @@ from django.utils import timezone
 
 from mailings.models import MailingStatus
 from mailings.tasks import run_due_mailings
-from tests.helpers import (create_mailing, create_message, create_recipient,
-                           create_user)
+from tests.helpers import create_mailing, create_message, create_recipient, create_user
 
 
 class RunDueMailingsTests(TestCase):

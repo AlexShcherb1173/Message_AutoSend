@@ -12,14 +12,10 @@ def create_superuser(email="admin@example.com", password="pass12345", **kwargs):
     return User.objects.create_superuser(email=email, password=password, **kwargs)
 
 
-def create_recipient(
-    owner, email="r1@example.com", full_name="Иван Петров", comment=""
-):
+def create_recipient(owner, email="r1@example.com", full_name="Иван Петров", comment=""):
     from clients.models import Recipient
 
-    return Recipient.objects.create(
-        owner=owner, email=email, full_name=full_name, comment=comment
-    )
+    return Recipient.objects.create(owner=owner, email=email, full_name=full_name, comment=comment)
 
 
 def create_message(owner, subject="Тема", body="Текст"):
@@ -28,9 +24,7 @@ def create_message(owner, subject="Тема", body="Текст"):
     return Message.objects.create(owner=owner, subject=subject, body=body)
 
 
-def create_mailing(
-    owner, message, recipients, start_at=None, end_at=None, last_sent_at=None
-):
+def create_mailing(owner, message, recipients, start_at=None, end_at=None, last_sent_at=None):
     from mailings.models import Mailing, MailingStatus
 
     start_at = start_at or timezone.now() + timezone.timedelta(minutes=1)

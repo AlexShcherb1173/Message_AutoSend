@@ -163,9 +163,7 @@ def send_mailing(
                     detail="Exception during send (см. серверный лог).",
                     triggered_by=initiator,
                 )
-                log.exception(
-                    "SEND fail mailing_id=%s to=%s", mailing.pk, email, extra=log_extra
-                )
+                log.exception("SEND fail mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
 
         # Итог по попытке + обновление mailing.last_sent_at
         if dry_run:
@@ -213,7 +211,5 @@ def send_mailing(
             attempt.server_response = "fatal error (см. серверный лог)"
             attempt.save(update_fields=["status", "server_response"])
         except Exception:  # noqa: BLE001
-            log.exception(
-                "ATTEMPT save fail (fatal) mailing_id=%s", mailing.pk, extra=log_extra
-            )
+            log.exception("ATTEMPT save fail (fatal) mailing_id=%s", mailing.pk, extra=log_extra)
         raise

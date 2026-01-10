@@ -58,9 +58,7 @@ class Command(BaseCommand):
                 group.permissions.add(p)
             except Permission.DoesNotExist:
                 self.stdout.write(
-                    self.style.WARNING(
-                        f"Permission {codename} for user model not found"
-                    )
+                    self.style.WARNING(f"Permission {codename} for user model not found")
                 )
 
         # Назначаем кастомные + базовые perms по content_type

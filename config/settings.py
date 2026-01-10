@@ -56,9 +56,7 @@ AUTH_USER_MODEL = "users.User"
 SECRET_KEY = env_clean("SECRET_KEY", "change-me-dev-secret")
 DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = [
-    h.strip()
-    for h in env_clean("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-    if h.strip()
+    h.strip() for h in env_clean("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()
 ]
 
 # === ПРИЛОЖЕНИЯ ===============================================================
@@ -124,9 +122,7 @@ DATABASES = {
 # === АУТЕНТИФИКАЦИЯ / ПАРОЛИ ==================================================
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -158,9 +154,7 @@ if DEBUG and not FORCE_SMTP:
     DEFAULT_FROM_EMAIL = env_clean("DEFAULT_FROM_EMAIL", "webmaster@localhost")
     SERVER_EMAIL = env_clean("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 else:
-    EMAIL_BACKEND = env_clean(
-        "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
-    )
+    EMAIL_BACKEND = env_clean("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
     EMAIL_HOST = env_clean("SMTP_HOST", "smtp.gmail.com")
     EMAIL_PORT = env_int("SMTP_PORT", 587)
     EMAIL_HOST_USER = env_clean("SMTP_USER", "")
@@ -170,13 +164,9 @@ else:
 
     # Не допускаем одновременного TLS и SSL
     if EMAIL_USE_TLS and EMAIL_USE_SSL:
-        raise RuntimeError(
-            "EMAIL_USE_TLS и EMAIL_USE_SSL не могут быть True одновременно."
-        )
+        raise RuntimeError("EMAIL_USE_TLS и EMAIL_USE_SSL не могут быть True одновременно.")
 
-    DEFAULT_FROM_EMAIL = env_clean(
-        "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com"
-    )
+    DEFAULT_FROM_EMAIL = env_clean("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com")
     SERVER_EMAIL = env_clean("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 
 # === ЛОГИН/ЛОГАУТ РЕДИРЕКТЫ ===================================================

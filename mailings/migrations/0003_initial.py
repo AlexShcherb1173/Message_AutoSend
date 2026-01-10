@@ -96,15 +96,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="mailingattempt",
-            index=models.Index(
-                fields=["triggered_by"], name="idx_attempt_triggered_by"
-            ),
+            index=models.Index(fields=["triggered_by"], name="idx_attempt_triggered_by"),
         ),
         migrations.AddIndex(
             model_name="mailinglog",
-            index=models.Index(
-                fields=["mailing", "-created_at"], name="idx_log_mailing_created"
-            ),
+            index=models.Index(fields=["mailing", "-created_at"], name="idx_log_mailing_created"),
         ),
         migrations.AddIndex(
             model_name="mailinglog",

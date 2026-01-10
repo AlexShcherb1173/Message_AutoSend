@@ -82,8 +82,7 @@ class Command(BaseCommand):
             # В режиме dry-run показываем только статистику симуляции
             self.stdout.write(
                 self.style.WARNING(
-                    f"⚠️ DRY-RUN: всего={result.total}, "
-                    f"отправлено бы={result.total}, реально=0"
+                    f"⚠️ DRY-RUN: всего={result.total}, " f"отправлено бы={result.total}, реально=0"
                 )
             )
         else:

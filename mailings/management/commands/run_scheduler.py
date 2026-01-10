@@ -9,8 +9,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_apscheduler import util as aps_util
-from django_apscheduler.jobstores import (DjangoJobExecution, DjangoJobStore,
-                                          register_events)
+from django_apscheduler.jobstores import DjangoJobExecution, DjangoJobStore, register_events
 
 from mailings.tasks import run_due_mailings
 

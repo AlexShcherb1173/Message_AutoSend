@@ -48,9 +48,7 @@ def start_mailings(modeladmin, request, queryset):
 @admin.action(description="Завершить (статус «Завершена»)")
 def finish_mailings(modeladmin, request, queryset):
     updated = queryset.update(status=MailingStatus.FINISHED)
-    modeladmin.message_user(
-        request, f"Обновлён статус «Завершена»: {updated}", level=messages.INFO
-    )
+    modeladmin.message_user(request, f"Обновлён статус «Завершена»: {updated}", level=messages.INFO)
 
 
 @admin.action(description="Сбросить (статус «Создана»)")
@@ -96,9 +94,7 @@ def export_attempts_csv(modeladmin, request, queryset):
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="mailing_attempts.csv"'
     writer = csv.writer(response)
-    writer.writerow(
-        ["mailing_id", "attempted_at", "status", "triggered_by", "server_response"]
-    )
+    writer.writerow(["mailing_id", "attempted_at", "status", "triggered_by", "server_response"])
     qs = MailingAttempt.objects.filter(mailing__in=queryset).select_related("mailing")
     for a in qs.iterator():
         writer.writerow(
@@ -118,9 +114,7 @@ def export_logs_csv(modeladmin, request, queryset):
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="mailing_logs.csv"'
     writer = csv.writer(response)
-    writer.writerow(
-        ["mailing_id", "created_at", "recipient", "status", "triggered_by", "detail"]
-    )
+    writer.writerow(["mailing_id", "created_at", "recipient", "status", "triggered_by", "detail"])
     qs = MailingLog.objects.filter(mailing__in=queryset).select_related("mailing")
     for log in qs.iterator():
         writer.writerow(

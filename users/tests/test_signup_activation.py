@@ -27,13 +27,9 @@ class SignupActivationTests(TestCase):
         self.assertIn("Подтверждение регистрации", mail.outbox[0].subject)
 
     def test_activate_makes_user_active(self):
-        u = User.objects.create_user(
-            email="a@a.com", password="pass12345", is_active=False
-        )
+        u = User.objects.create_user(email="a@a.com", password="pass12345", is_active=False)
         uidb64 = urlsafe_base64_encode(force_bytes(u.pk))
-        resp = self.client.get(
-            reverse("users:activate", kwargs={"uidb64": uidb64, "token": "x"})
-        )
+        resp = self.client.get(reverse("users:activate", kwargs={"uidb64": uidb64, "token": "x"}))
         self.assertEqual(resp.status_code, 302)
         u.refresh_from_db()
         self.assertTrue(u.is_active)

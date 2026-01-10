@@ -5,8 +5,7 @@ from django.utils import timezone
 
 from mailings.models import AttemptStatus, MailingAttempt, MailingLog
 from mailings.services import send_mailing
-from tests.helpers import (create_mailing, create_message, create_recipient,
-                           create_user)
+from tests.helpers import create_mailing, create_message, create_recipient, create_user
 
 
 class SendMailingServiceTests(TestCase):
@@ -29,9 +28,7 @@ class SendMailingServiceTests(TestCase):
         self.assertEqual(result.sent, 0)
         self.assertEqual(result.skipped, 2)
 
-        self.assertEqual(
-            MailingLog.objects.filter(mailing=self.m, status="DRY_RUN").count(), 2
-        )
+        self.assertEqual(MailingLog.objects.filter(mailing=self.m, status="DRY_RUN").count(), 2)
         attempt = MailingAttempt.objects.filter(mailing=self.m).first()
         self.assertEqual(attempt.status, AttemptStatus.SUCCESS)
 
@@ -40,19 +37,13 @@ class SendMailingServiceTests(TestCase):
         result = send_mailing(self.m, user=self.u, dry_run=False)
         self.assertEqual(result.total, 2)
         self.assertEqual(result.sent, 2)
-        self.assertEqual(
-            MailingLog.objects.filter(mailing=self.m, status="SENT").count(), 2
-        )
+        self.assertEqual(MailingLog.objects.filter(mailing=self.m, status="SENT").count(), 2)
         self.m.refresh_from_db()
         self.assertIsNotNone(self.m.last_sent_at)
 
-    @patch(
-        "mailings.services.send_mail", autospec=True, side_effect=Exception("smtp down")
-    )
+    @patch("mailings.services.send_mail", autospec=True, side_effect=Exception("smtp down"))
     def test_real_send_errors_are_logged(self, mocked_send_mail):
         result = send_mailing(self.m, user=self.u, dry_run=False)
         self.assertEqual(result.total, 2)
         self.assertEqual(result.sent, 0)
-        self.assertEqual(
-            MailingLog.objects.filter(mailing=self.m, status="ERROR").count(), 2
-        )
+        self.assertEqual(MailingLog.objects.filter(mailing=self.m, status="ERROR").count(), 2)

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.core.cache import cache
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
@@ -14,15 +16,20 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_POST
-from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
-                                  TemplateView, UpdateView)
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 from django.views.generic.detail import SingleObjectMixin
 
 from common.mixins import ClientCacheMixin
 
 from .forms import MailingForm
-from .models import (AttemptStatus, Mailing, MailingAttempt, MailingLog,
-                     MailingStatus)
+from .models import AttemptStatus, Mailing, MailingAttempt, MailingLog, MailingStatus
 from .services import send_mailing
 
 # ===== Миксины ограничения доступа (владельцы/менеджеры) =====
@@ -126,9 +133,7 @@ class MailingDeleteView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, Dele
     success_url = reverse_lazy("mailings:list")
 
 
-class MailingSendView(
-    OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObjectMixin, View
-):
+class MailingSendView(OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObjectMixin, View):
     """Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю)."""
 
     model = Mailing
@@ -195,9 +200,7 @@ class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
                 attempt_ok_total=Count(
                     "attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)
                 ),
-                attempt_fail_total=Count(
-                    "attempts", filter=Q(attempts__status=AttemptStatus.FAIL)
-                ),
+                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
             )
             .select_related("message")
             .prefetch_related("recipients")
@@ -242,9 +245,7 @@ def mailing_send(request, pk: int):
     return redirect("mailings:detail", pk=mailing.pk)
 
 
-@method_decorator(
-    cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch"
-)
+@method_decorator(cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch")
 class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
     """
     Персональный отчёт по рассылкам владельца.
@@ -296,12 +297,8 @@ class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
 
             summary = {
                 "total_mailings": mailings_qs.count(),
-                "active_mailings": mailings_qs.filter(
-                    status=MailingStatus.RUNNING
-                ).count(),
-                "finished_mailings": mailings_qs.filter(
-                    status=MailingStatus.FINISHED
-                ).count(),
+                "active_mailings": mailings_qs.filter(status=MailingStatus.RUNNING).count(),
+                "finished_mailings": mailings_qs.filter(status=MailingStatus.FINISHED).count(),
                 "recipients_total": recipients_total,
                 "attempts_total": attempts_qs.count(),
                 "attempts_ok": attempts_qs.filter(status=AttemptStatus.SUCCESS).count(),
@@ -324,9 +321,7 @@ class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
                 attempt_ok_total=Count(
                     "attempts", filter=Q(attempts__status=AttemptStatus.SUCCESS)
                 ),
-                attempt_fail_total=Count(
-                    "attempts", filter=Q(attempts__status=AttemptStatus.FAIL)
-                ),
+                attempt_fail_total=Count("attempts", filter=Q(attempts__status=AttemptStatus.FAIL)),
             )
             .select_related("message")
             .prefetch_related("recipients")

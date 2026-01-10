@@ -65,9 +65,7 @@ def run_due_mailings(triggered_by: str = "scheduler") -> int:
     try:
         for mailing in due_mailings_queryset():
             # send_mailing сам запишет логи/попытки; здесь просто вызываем
-            send_mailing(
-                mailing, user=mailing.owner, dry_run=False, triggered_by=triggered_by
-            )
+            send_mailing(mailing, user=mailing.owner, dry_run=False, triggered_by=triggered_by)
             # актуализируем статус и отметим время последней отправки
             mailing.refresh_status(save=True)
             processed += 1

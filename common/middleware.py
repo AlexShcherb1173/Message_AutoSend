@@ -21,9 +21,7 @@ class CurrentRequestMiddleware(MiddlewareMixin):
 
         user = getattr(request, "user", None)
         request.user_email = (
-            getattr(user, "email", "-")
-            if getattr(user, "is_authenticated", False)
-            else "-"
+            getattr(user, "email", "-") if getattr(user, "is_authenticated", False) else "-"
         )
 
     def process_response(self, request, response):

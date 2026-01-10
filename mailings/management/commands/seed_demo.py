@@ -60,6 +60,4 @@ class Command(BaseCommand):
             m.save(update_fields=["status", "updated_at"])
             updated += int(status_before != m.status)
 
-        self.stdout.write(
-            self.style.SUCCESS(f"✅ Готово. Обновлено статусов: {updated}.")
-        )
+        self.stdout.write(self.style.SUCCESS(f"✅ Готово. Обновлено статусов: {updated}."))

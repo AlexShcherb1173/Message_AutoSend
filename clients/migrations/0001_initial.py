@@ -74,9 +74,7 @@ class Migration(migrations.Migration):
                 "verbose_name": "Получатель",
                 "verbose_name_plural": "Получатели",
                 "ordering": ("full_name", "email"),
-                "permissions": (
-                    ("view_all_recipients", "Может просматривать всех получателей"),
-                ),
+                "permissions": (("view_all_recipients", "Может просматривать всех получателей"),),
             },
         ),
     ]

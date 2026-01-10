@@ -1,7 +1,14 @@
 from django.urls import include, path, re_path
 
-from .views import (ActivateView, EmailLoginView, EmailLogoutView,
-                    ProfileUpdateView, ProfileView, SignUpDoneView, SignUpView)
+from .views import (
+    ActivateView,
+    EmailLoginView,
+    EmailLogoutView,
+    ProfileUpdateView,
+    ProfileView,
+    SignUpDoneView,
+    SignUpView,
+)
 
 app_name = "users"
 

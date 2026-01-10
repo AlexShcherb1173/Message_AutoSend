@@ -6,8 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from mailings.models import MailingStatus
-from tests.helpers import (create_mailing, create_message, create_recipient,
-                           create_user)
+from tests.helpers import create_mailing, create_message, create_recipient, create_user
 
 
 class MailingViewsTests(TestCase):

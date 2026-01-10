@@ -31,18 +31,10 @@ class MailingQuerySet(models.QuerySet):
     def with_stats(self) -> "MailingQuerySet":
         return self.annotate(
             sent_messages=Count("logs", filter=Q(logs__status="SENT"), distinct=True),
-            failed_messages=Count(
-                "logs", filter=Q(logs__status="ERROR"), distinct=True
-            ),
-            dry_run_messages=Count(
-                "logs", filter=Q(logs__status="DRY_RUN"), distinct=True
-            ),
-            attempt_success=Count(
-                "attempts", filter=Q(attempts__status="Успешно"), distinct=True
-            ),
-            attempt_fail=Count(
-                "attempts", filter=Q(attempts__status="Не успешно"), distinct=True
-            ),
+            failed_messages=Count("logs", filter=Q(logs__status="ERROR"), distinct=True),
+            dry_run_messages=Count("logs", filter=Q(logs__status="DRY_RUN"), distinct=True),
+            attempt_success=Count("attempts", filter=Q(attempts__status="Успешно"), distinct=True),
+            attempt_fail=Count("attempts", filter=Q(attempts__status="Не успешно"), distinct=True),
         )
 
 
@@ -231,9 +223,7 @@ class MailingLog(models.Model):
         verbose_name_plural = "Логи отправок"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(
-                fields=["mailing", "-created_at"], name="idx_log_mailing_created"
-            ),
+            models.Index(fields=["mailing", "-created_at"], name="idx_log_mailing_created"),
             models.Index(fields=["status"], name="idx_log_status"),
             models.Index(fields=["recipient"], name="idx_log_recipient"),
             models.Index(fields=["triggered_by"], name="idx_log_triggered_by"),
@@ -277,9 +267,7 @@ class MailingAttempt(models.Model):
         verbose_name_plural = "Попытки рассылки"
         ordering = ("-attempted_at",)
         indexes = [
-            models.Index(
-                fields=["mailing", "-attempted_at"], name="idx_attempt_mailing_last"
-            ),
+            models.Index(fields=["mailing", "-attempted_at"], name="idx_attempt_mailing_last"),
             models.Index(fields=["status"], name="idx_attempt_status"),
             models.Index(fields=["triggered_by"], name="idx_attempt_triggered_by"),
         ]

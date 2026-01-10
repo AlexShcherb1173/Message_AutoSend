@@ -56,9 +56,7 @@ class Migration(migrations.Migration):
                 "verbose_name": "Сообщение",
                 "verbose_name_plural": "Сообщения",
                 "ordering": ("-created_at",),
-                "permissions": (
-                    ("view_all_messages", "Может просматривать все сообщения"),
-                ),
+                "permissions": (("view_all_messages", "Может просматривать все сообщения"),),
             },
         ),
     ]
