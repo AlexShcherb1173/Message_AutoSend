@@ -11,7 +11,6 @@ settings.py — конфигурация проекта Message_AutoSend.
 from pathlib import Path
 import os
 
-import config
 from dotenv import load_dotenv
 
 # === БАЗОВЫЕ ПУТИ ============================================================
@@ -347,4 +346,14 @@ LOGGING = {
         #     "propagate": False,
         # },
     },
+}
+
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+    }
 }
