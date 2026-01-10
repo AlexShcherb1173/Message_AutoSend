@@ -1,0 +1,19 @@
+[flake8]
+max-line-length = 100
+
+# black совместимая связка
+extend-ignore =
+    E203,
+    W503,
+    W504,
+    E501
+
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    */migrations/*,
+    staticfiles,
+    media,
+    .pg_diag.py
