@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from django.contrib import messages
+from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import (
-    LoginRequiredMixin,
     UserPassesTestMixin,
     PermissionRequiredMixin,
 )
-from django.db.models import Count, Q
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic import (
     ListView,
     DetailView,
@@ -20,7 +20,6 @@ from django.views.generic import (
     DeleteView,
     TemplateView,
 )
-from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
@@ -110,7 +109,7 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
         obj.owner = self.request.user  # <— записываем владельца
         obj.save()
         form.save_m2m()
-        obj.refresh_status(save=True)
+        return redirect(self.success_url)
         return redirect(self.success_url)
 
 
@@ -136,16 +135,23 @@ class MailingDeleteView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, Dele
     success_url = reverse_lazy("mailings:list")
 
 
-class MailingSendView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, View):
-    """Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю).
-    Менеджер видит карточку, но не отправляет."""
+class MailingSendView(OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObjectMixin, View):
+    """Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю)."""
 
-    def post(self, request, pk: int):
-        mailing = get_object_or_404(Mailing, pk=pk)
-        # OwnerOnlyMutationMixin защитит от чужих действий
+    model = Mailing
+    pk_url_kwarg = "pk"
+
+    def test_func(self):
+        obj = self.get_object()
+        u = self.request.user
+        return u.is_superuser or (obj.owner_id == u.id)
+
+    def post(self, request, *args, **kwargs):
+        mailing = self.get_object()
         dry_run = request.POST.get("dry_run") == "1"
         result = send_mailing(mailing, user=request.user, dry_run=dry_run)
         mailing.refresh_status(save=True)
+
         if dry_run:
             messages.info(
                 request,
@@ -157,7 +163,6 @@ class MailingSendView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, View):
                 f"Готово: всего={result.total}, отправлено={result.sent}, пропущено={result.skipped}.",
             )
         return redirect("mailings:detail", pk=mailing.pk)
-
 
 class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
     """Страница отчётов.
@@ -209,15 +214,12 @@ class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
 
 # Доп. функционал для менеджеров: «отключить» рассылку (права required)
 class MailingDisableView(PermissionRequiredMixin, View):
-    """Принудительно завершить рассылку (для менеджеров/админов).
-    Требуется perm: 'mailings.disable_mailing'."""
-
     permission_required = "mailings.disable_mailing"
 
     def post(self, request, pk: int):
         mailing = get_object_or_404(Mailing, pk=pk)
-        mailing.status = MailingStatus.FINISHED
-        mailing.save(update_fields=["status", "updated_at"])
+        mailing.end_at = timezone.now()   # ключевая строка
+        mailing.save()                    # save() сам выставит FINISHED
         messages.warning(request, f"Рассылка #{mailing.pk} принудительно завершена.")
         return redirect("mailings:detail", pk=mailing.pk)
 

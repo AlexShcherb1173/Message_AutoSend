@@ -1,0 +1,11 @@
+[run]
+source =
+    clients
+    messages_app
+    mailings
+    users
+    common
+omit =
+    */migrations/*
+    */tests/*
+    config/*

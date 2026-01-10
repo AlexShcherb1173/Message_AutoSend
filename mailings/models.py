@@ -30,11 +30,11 @@ class MailingQuerySet(models.QuerySet):
 
     def with_stats(self) -> "MailingQuerySet":
         return self.annotate(
-            sent_messages=Count("logs", filter=Q(logs__status="SENT")),
-            failed_messages=Count("logs", filter=Q(logs__status="ERROR")),
-            dry_run_messages=Count("logs", filter=Q(logs__status="DRY_RUN")),
-            attempt_success=Count("attempts", filter=Q(attempts__status="Успешно")),
-            attempt_fail=Count("attempts", filter=Q(attempts__status="Не успешно")),
+            sent_messages=Count("logs", filter=Q(logs__status="SENT"), distinct=True),
+            failed_messages=Count("logs", filter=Q(logs__status="ERROR"), distinct=True),
+            dry_run_messages=Count("logs", filter=Q(logs__status="DRY_RUN"), distinct=True),
+            attempt_success=Count("attempts", filter=Q(attempts__status="Успешно"), distinct=True),
+            attempt_fail=Count("attempts", filter=Q(attempts__status="Не успешно"), distinct=True),
         )
 
 
@@ -101,7 +101,7 @@ class Mailing(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="mailing_end_after_start",
-                check=models.Q(end_at__gt=models.F("start_at")),
+                condition=models.Q(end_at__gt=models.F("start_at")),
             ),
         ]
         indexes = [

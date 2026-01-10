@@ -10,6 +10,8 @@ settings.py — конфигурация проекта Message_AutoSend.
 
 from pathlib import Path
 import os
+
+import config
 from dotenv import load_dotenv
 
 # === БАЗОВЫЕ ПУТИ ============================================================
