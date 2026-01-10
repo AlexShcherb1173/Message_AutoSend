@@ -1,11 +1,12 @@
 from unittest.mock import patch
+
+from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth.models import Permission
 
-from tests.helpers import create_user, create_superuser, create_message, create_recipient, create_mailing
 from mailings.models import MailingStatus
+from tests.helpers import (create_mailing, create_message, create_recipient, create_user)
 
 
 class MailingViewsTests(TestCase):
@@ -20,7 +21,9 @@ class MailingViewsTests(TestCase):
         self.msg = create_message(self.owner)
         self.r = create_recipient(self.owner)
         self.m = create_mailing(
-            self.owner, self.msg, [self.r],
+            self.owner,
+            self.msg,
+            [self.r],
             start_at=timezone.now() - timezone.timedelta(minutes=1),
             end_at=timezone.now() + timezone.timedelta(hours=1),
         )

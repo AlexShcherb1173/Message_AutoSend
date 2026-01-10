@@ -8,8 +8,8 @@ settings.py — конфигурация проекта Message_AutoSend.
   • заполните SMTP-параметры (или используйте почтовый сервис/песочницу)
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -217,7 +217,6 @@ MIDDLEWARE = [
 ]
 
 
-
 USE_ETAGS = True  # пусть Django проставляет ETag на полноценные ответы
 
 MAILINGS_MIN_REPEAT_MINUTES = int(os.getenv("MAILINGS_MIN_REPEAT_MINUTES", "5"))
@@ -348,8 +347,12 @@ LOGGING = {
     },
 }
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+)
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+)
 
 CACHES = {
     "default": {

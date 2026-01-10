@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from tests.helpers import create_user, create_recipient
+from tests.helpers import create_recipient, create_user
 
 
 class RecipientViewsPermissionsTests(TestCase):
@@ -28,13 +28,17 @@ class RecipientViewsPermissionsTests(TestCase):
 
     def test_create_sets_owner(self):
         self.client.login(email="u1@example.com", password="pass12345")
-        resp = self.client.post(reverse("clients:recipient_create"), data={
-            "email": "new@example.com",
-            "full_name": "Новый Получатель",
-            "comment": "ok",
-        })
+        resp = self.client.post(
+            reverse("clients:recipient_create"),
+            data={
+                "email": "new@example.com",
+                "full_name": "Новый Получатель",
+                "comment": "ok",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         # owner должен быть u1
         from clients.models import Recipient
+
         obj = Recipient.objects.get(email="new@example.com")
         self.assertEqual(obj.owner_id, self.u1.id)

@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from tests.helpers import create_user
 from clients.models import Recipient
+from tests.helpers import create_user
 
 
 class RecipientModelTests(TestCase):
@@ -10,7 +10,9 @@ class RecipientModelTests(TestCase):
         self.user = create_user()
 
     def test_recipient_str_full_name(self):
-        r = Recipient.objects.create(owner=self.user, email="u@example.com", full_name="Иван Петров")
+        r = Recipient.objects.create(
+            owner=self.user, email="u@example.com", full_name="Иван Петров"
+        )
         self.assertEqual(str(r), "Иван Петров <u@example.com>")
 
     def test_email_normalized_on_clean(self):
@@ -26,7 +28,9 @@ class RecipientModelTests(TestCase):
             r.full_clean()
 
     def test_unique_email(self):
-        Recipient.objects.create(owner=self.user, email="dup@example.com", full_name="A A")
+        Recipient.objects.create(
+            owner=self.user, email="dup@example.com", full_name="A A"
+        )
         r2 = Recipient(owner=self.user, email="dup@example.com", full_name="B B")
         with self.assertRaises(ValidationError):
             r2.full_clean()

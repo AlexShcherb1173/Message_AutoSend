@@ -1,38 +1,29 @@
 from __future__ import annotations
 
 from django.contrib import messages
-from django.utils import timezone
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import (
-    UserPassesTestMixin,
-    PermissionRequiredMixin,
-)
-from django.shortcuts import redirect, get_object_or_404
-from django.urls import reverse_lazy
-from django.views import View
-from django.views.decorators.http import require_POST
-from django.views.generic.detail import SingleObjectMixin
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    TemplateView,
-)
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-
-from .forms import MailingForm
-from .services import send_mailing
-
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin,
+                                        UserPassesTestMixin)
 from django.core.cache import cache
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_POST
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  TemplateView, UpdateView)
+from django.views.generic.detail import SingleObjectMixin
 
 from common.mixins import ClientCacheMixin
-from .models import Mailing, MailingStatus, MailingLog, MailingAttempt, AttemptStatus
 
+from .forms import MailingForm
+from .models import (AttemptStatus, Mailing, MailingAttempt, MailingLog,
+                     MailingStatus)
+from .services import send_mailing
 
 # ===== Миксины ограничения доступа (владельцы/менеджеры) =====
 
@@ -135,7 +126,9 @@ class MailingDeleteView(OwnerFilteredQuerysetMixin, OwnerOnlyMutationMixin, Dele
     success_url = reverse_lazy("mailings:list")
 
 
-class MailingSendView(OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObjectMixin, View):
+class MailingSendView(
+    OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObjectMixin, View
+):
     """Ручной запуск рассылки (POST). Доступно только владельцу (или суперпользователю)."""
 
     model = Mailing
@@ -163,6 +156,7 @@ class MailingSendView(OwnerFilteredQuerysetMixin, UserPassesTestMixin, SingleObj
                 f"Готово: всего={result.total}, отправлено={result.sent}, пропущено={result.skipped}.",
             )
         return redirect("mailings:detail", pk=mailing.pk)
+
 
 class MailingStatsView(OwnerFilteredQuerysetMixin, TemplateView):
     """Страница отчётов.
@@ -218,8 +212,8 @@ class MailingDisableView(PermissionRequiredMixin, View):
 
     def post(self, request, pk: int):
         mailing = get_object_or_404(Mailing, pk=pk)
-        mailing.end_at = timezone.now()   # ключевая строка
-        mailing.save()                    # save() сам выставит FINISHED
+        mailing.end_at = timezone.now()  # ключевая строка
+        mailing.save()  # save() сам выставит FINISHED
         messages.warning(request, f"Рассылка #{mailing.pk} принудительно завершена.")
         return redirect("mailings:detail", pk=mailing.pk)
 
@@ -251,7 +245,6 @@ def mailing_send(request, pk: int):
 @method_decorator(
     cache_page(60 * 5, key_prefix="mailings:user_report"), name="dispatch"
 )
-
 class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
     """
     Персональный отчёт по рассылкам владельца.
@@ -311,12 +304,8 @@ class MailingUserReportView(LoginRequiredMixin, ClientCacheMixin, TemplateView):
                 ).count(),
                 "recipients_total": recipients_total,
                 "attempts_total": attempts_qs.count(),
-                "attempts_ok": attempts_qs.filter(
-                    status=AttemptStatus.SUCCESS
-                ).count(),
-                "attempts_fail": attempts_qs.filter(
-                    status=AttemptStatus.FAIL
-                ).count(),
+                "attempts_ok": attempts_qs.filter(status=AttemptStatus.SUCCESS).count(),
+                "attempts_fail": attempts_qs.filter(status=AttemptStatus.FAIL).count(),
                 "sent_total": logs_qs.filter(status="SENT").count(),
                 "errors_total": logs_qs.filter(status="ERROR").count(),
             }

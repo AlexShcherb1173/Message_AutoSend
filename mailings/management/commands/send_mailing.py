@@ -26,6 +26,7 @@
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
+
 from mailings.models import Mailing
 from mailings.services import send_mailing
 

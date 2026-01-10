@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import models
-from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.db.models import Count, Q
+from django.utils import timezone
 
 
 class MailingStatus(models.TextChoices):
@@ -31,10 +31,18 @@ class MailingQuerySet(models.QuerySet):
     def with_stats(self) -> "MailingQuerySet":
         return self.annotate(
             sent_messages=Count("logs", filter=Q(logs__status="SENT"), distinct=True),
-            failed_messages=Count("logs", filter=Q(logs__status="ERROR"), distinct=True),
-            dry_run_messages=Count("logs", filter=Q(logs__status="DRY_RUN"), distinct=True),
-            attempt_success=Count("attempts", filter=Q(attempts__status="Успешно"), distinct=True),
-            attempt_fail=Count("attempts", filter=Q(attempts__status="Не успешно"), distinct=True),
+            failed_messages=Count(
+                "logs", filter=Q(logs__status="ERROR"), distinct=True
+            ),
+            dry_run_messages=Count(
+                "logs", filter=Q(logs__status="DRY_RUN"), distinct=True
+            ),
+            attempt_success=Count(
+                "attempts", filter=Q(attempts__status="Успешно"), distinct=True
+            ),
+            attempt_fail=Count(
+                "attempts", filter=Q(attempts__status="Не успешно"), distinct=True
+            ),
         )
 
 

@@ -13,13 +13,14 @@ from __future__ import annotations
   • Поле triggered_by — CharField (email инициатора), НЕ используем select_related."""
 
 import csv
+
 from django.contrib import admin, messages
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils.encoding import smart_str
 
 from .models import Mailing, MailingAttempt, MailingLog, MailingStatus
-from .services import send_mailing, SendResult
+from .services import SendResult, send_mailing
 
 
 # ===== ВСПОМОГАТЕЛЬНОЕ =====

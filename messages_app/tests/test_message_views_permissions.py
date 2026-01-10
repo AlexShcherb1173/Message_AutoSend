@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from tests.helpers import create_user, create_message
+from tests.helpers import create_message, create_user
 
 
 class MessageViewsPermissionsTests(TestCase):
@@ -19,5 +19,7 @@ class MessageViewsPermissionsTests(TestCase):
 
     def test_detail_other_owner_404(self):
         self.client.login(email="u1@example.com", password="pass12345")
-        resp = self.client.get(reverse("messages_app:message_detail", args=[self.m2.pk]))
+        resp = self.client.get(
+            reverse("messages_app:message_detail", args=[self.m2.pk])
+        )
         self.assertEqual(resp.status_code, 404)

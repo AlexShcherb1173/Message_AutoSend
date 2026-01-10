@@ -5,12 +5,11 @@ from typing import Iterable
 
 from django.conf import settings
 from django.core.cache import cache
-from django.utils import timezone
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import Mailing, MailingStatus
 from .services import send_mailing
-
 
 LOCK_KEY = "mailings:runner:lock"
 LOCK_TTL = 55  # сек — чтобы job раз в минуту не накладывались друг на друга

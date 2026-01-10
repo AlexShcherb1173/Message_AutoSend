@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 #: Пространство имён приложения для маршрутов клиентов.

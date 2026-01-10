@@ -99,11 +99,21 @@ def send_mailing(
                     triggered_by=initiator,
                 )
                 skipped += 1
-                log.info("DRY-RUN skip mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
+                log.info(
+                    "DRY-RUN skip mailing_id=%s to=%s",
+                    mailing.pk,
+                    email,
+                    extra=log_extra,
+                )
                 continue
 
             try:
-                log.debug("SMTP send try mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
+                log.debug(
+                    "SMTP send try mailing_id=%s to=%s",
+                    mailing.pk,
+                    email,
+                    extra=log_extra,
+                )
 
                 sent_count = send_mail(
                     subject=subject,
@@ -122,7 +132,12 @@ def send_mailing(
                         detail="Отправлено стандартным SMTP backend.",
                         triggered_by=initiator,
                     )
-                    log.info("SENT ok mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
+                    log.info(
+                        "SENT ok mailing_id=%s to=%s",
+                        mailing.pk,
+                        email,
+                        extra=log_extra,
+                    )
                 else:
                     skipped += 1
                     MailingLog.objects.create(
@@ -132,7 +147,12 @@ def send_mailing(
                         detail="send_mail вернул 0.",
                         triggered_by=initiator,
                     )
-                    log.warning("SEND returned 0 mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
+                    log.warning(
+                        "SEND returned 0 mailing_id=%s to=%s",
+                        mailing.pk,
+                        email,
+                        extra=log_extra,
+                    )
 
             except Exception:  # noqa: BLE001
                 skipped += 1
@@ -143,7 +163,9 @@ def send_mailing(
                     detail="Exception during send (см. серверный лог).",
                     triggered_by=initiator,
                 )
-                log.exception("SEND fail mailing_id=%s to=%s", mailing.pk, email, extra=log_extra)
+                log.exception(
+                    "SEND fail mailing_id=%s to=%s", mailing.pk, email, extra=log_extra
+                )
 
         # Итог по попытке + обновление mailing.last_sent_at
         if dry_run:
@@ -191,5 +213,7 @@ def send_mailing(
             attempt.server_response = "fatal error (см. серверный лог)"
             attempt.save(update_fields=["status", "server_response"])
         except Exception:  # noqa: BLE001
-            log.exception("ATTEMPT save fail (fatal) mailing_id=%s", mailing.pk, extra=log_extra)
+            log.exception(
+                "ATTEMPT save fail (fatal) mailing_id=%s", mailing.pk, extra=log_extra
+            )
         raise

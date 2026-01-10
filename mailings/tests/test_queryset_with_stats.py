@@ -1,8 +1,8 @@
 from django.test import TestCase
 from django.utils import timezone
 
-from tests.helpers import create_user, create_message, create_recipient
-from mailings.models import Mailing, MailingLog, MailingAttempt, AttemptStatus
+from mailings.models import AttemptStatus, Mailing, MailingAttempt, MailingLog
+from tests.helpers import create_message, create_recipient, create_user
 
 
 class MailingWithStatsTests(TestCase):

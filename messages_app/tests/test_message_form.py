@@ -1,4 +1,5 @@
 from django.test import TestCase
+
 from messages_app.forms import MessageForm
 
 
