@@ -3,8 +3,7 @@ name: deploy
 on:
   workflow_run:
     workflows: ["ci"]
-    types:
-      - completed
+    types: [completed]
 
   workflow_dispatch:
 
@@ -15,13 +14,9 @@ jobs:
 
     steps:
       - name: Upload project via rsync
-        uses: burnett01/rsync-deployments@7.0.2
+        uses: burnett01/rsync-deployments@v8
         with:
-          switches: -avzr --delete \
-            --exclude=".git" \
-            --exclude=".venv" \
-            --exclude="__pycache__" \
-            --exclude=".pytest_cache"
+          switches: -avzr --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache --exclude=.env
           path: ./
           remote_path: ${{ secrets.DEPLOY_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}
