@@ -20,9 +20,7 @@ jobs:
       - name: Upload project via rsync
         uses: burnett01/rsync-deployments@v8
         with:
-          # ВАЖНО: одной строкой, без "\" переносов
-          # ВАЖНО: исключаем .env, чтобы rsync никогда не удалил серверный файл
-          switches: -avzr --exclude=.env --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache
+          switches: -avzr --delete --exclude=.env --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache
           path: ./
           remote_path: ${{ secrets.DEPLOY_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}
