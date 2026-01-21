@@ -13,10 +13,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout не нужен для rsync-deployments, но оставим, чтобы не было сюрпризов
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Upload project via rsync
         uses: burnett01/rsync-deployments@v8
         with:
-          switches: -avzr --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache --exclude=.env
+          # ВАЖНО: одной строкой, без "\" переносов
+          # ВАЖНО: исключаем .env, чтобы rsync никогда не удалил серверный файл
+          switches: -avzr --exclude=.env --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache
           path: ./
           remote_path: ${{ secrets.DEPLOY_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}
@@ -34,17 +40,14 @@ jobs:
           script: |
             set -e
 
-            echo "=== SERVER INFO ==="
-            hostname
-            whoami
-
-            echo "=== DEPLOY_PATH ==="
-            echo "${{ secrets.DEPLOY_PATH }}"
+            echo "NEW DEPLOY SCRIPT v4"
+            echo "HOST=$(hostname)"
+            echo "USER=$(whoami)"
+            echo "DEPLOY_PATH=${{ secrets.DEPLOY_PATH }}"
 
             cd "${{ secrets.DEPLOY_PATH }}"
 
-            echo "=== CURRENT DIR ==="
-            pwd
+            echo "PWD=$(pwd)"
             ls -la
 
             if [ ! -f .env ]; then
