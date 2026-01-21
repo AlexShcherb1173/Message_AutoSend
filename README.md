@@ -132,7 +132,6 @@ SERVER_EMAIL=errors@yourdomain.com
 ##### Redis cache
 REDIS_URL=redis://127.0.0.1:6379/1
 
-
 ##### В settings.py уже прописаны:
 
 CACHES с django.core.cache.backends.redis.RedisCache и LOCATION из REDIS_URL
@@ -148,7 +147,6 @@ LOGGING настроен на файловые обработчики в logs/
 python manage.py migrate
 python manage.py createsuperuser
 
-
 ###### Опционально — наполнить демо-данными:
 
 python manage.py seed_demo
@@ -160,7 +158,6 @@ poetry run python manage.py runserver
 
 ###### Либо venv
 python manage.py runserver
-
 
 Открывайте: http://127.0.0.1:8000
 
@@ -229,13 +226,11 @@ run_scheduler.ps1 — старт планировщика:
 ###### запуск из корня проекта
 .\scripts\run_scheduler.ps1
 
-
 Создаст (или переиспользует) лог logs\scheduler\run_YYYYMMDD.log.
 
 stop_scheduler.ps1 — останавливает запущенный планировщик (по PID в pid-файле):
 
 .\scripts\stop_scheduler.ps1
-
 
 tick_send_due_mailings.ps1 — однократный «тик»: принудительно запустить отложенные рассылки «которые пора»:
 

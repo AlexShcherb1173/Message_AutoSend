@@ -18,7 +18,7 @@ if (-not $NoConfirm) {
     }
 }
 
-# If venv is already activated, just use python
+# If .venv is already activated, just use python
 $PYTHON = "python"
 
 function Run-Step {

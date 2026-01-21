@@ -6,16 +6,17 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views import View
-from django.views.generic import CreateView, TemplateView, DetailView, UpdateView
+from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
 
-from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomUserChangeForm
-from .models import User
+from .forms import CustomUserChangeForm, CustomUserCreationForm, EmailAuthenticationForm
+
+# from .models import User
 from .utils import build_activation_link
 
 logger = logging.getLogger(__name__)
@@ -55,10 +56,9 @@ class SignUpView(CreateView):
             html_message=html,
         )
 
-        messages.info(
-            self.request, "Мы отправили письмо с подтверждением на ваш e-mail."
-        )
+        messages.info(self.request, "Мы отправили письмо с подтверждением на ваш e-mail.")
         return super().form_valid(form)
+
 
 class SignUpDoneView(TemplateView):
     template_name = "users/signup_done.html"

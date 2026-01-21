@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import threading
 from typing import Optional
+
 from django.http import HttpRequest
 
 _request_local = threading.local()

@@ -8,12 +8,11 @@ urls.py — корневая маршрутизация проекта Message_A
 а также определяет главную страницу проекта.
 """
 
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 from django.views.generic import TemplateView
-
 
 #: Корневые маршруты проекта Message_AutoSend.
 #:

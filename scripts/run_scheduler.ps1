@@ -1,6 +1,6 @@
 # run_scheduler.ps1
 # Запускает django-apscheduler, пишет логи в .\logs\scheduler\run_YYYYMMDD.log.
-# Умеет работать и через Poetry, и через локальный .venv, и через системный Python.
+# Умеет работать и через Poetry, и через локальный ..venv, и через системный Python.
 [CmdletBinding()]
 param(
   [string]$ManageCmd = "runapscheduler",   # имя management-команды
@@ -50,14 +50,14 @@ try {
   Write-Log "===== run_scheduler start ====="
   Rotate-Logs -dir $LogDir -keepDays $KeepDays
 
-  # --- Pick Python runner (Poetry -> .venv -> system) ---
+  # --- Pick Python runner (Poetry -> ..venv -> system) ---
   $pythonCmd = $null
   if (Get-Command poetry -ErrorAction SilentlyContinue) {
     Write-Log "Using Poetry environment"
     $pythonCmd = { poetry run python }
-  } elseif (Test-Path ".\.venv\Scripts\python.exe") {
-    Write-Log "Using local .venv"
-    $env:Path = (Join-Path $ScriptDir ".\.venv\Scripts") + ";" + $env:Path
+  } elseif (Test-Path ".\..venv\Scripts\python.exe") {
+    Write-Log "Using local ..venv"
+    $env:Path = (Join-Path $ScriptDir ".\..venv\Scripts") + ";" + $env:Path
     $pythonCmd = { python }
   } else {
     Write-Log "WARNING: fallback to system Python"

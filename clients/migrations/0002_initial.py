@@ -40,8 +40,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="recipient",
-            index=models.Index(
-                fields=["-created_at"], name="idx_recipient_created_desc"
-            ),
+            index=models.Index(fields=["-created_at"], name="idx_recipient_created_desc"),
         ),
     ]

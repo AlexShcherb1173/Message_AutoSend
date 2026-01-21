@@ -4,20 +4,14 @@ import logging
 import signal
 import sys
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from django_apscheduler.jobstores import (
-    DjangoJobStore,
-    register_events,
-    DjangoJobExecution,
-)
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 from django_apscheduler import util as aps_util
+from django_apscheduler.jobstores import DjangoJobExecution, DjangoJobStore, register_events
 
 from mailings.tasks import run_due_mailings
-
 
 # Получаем именованный логгер — он пишет в logs/scheduler/ и общий app.log
 logger = logging.getLogger(__name__)

@@ -1,0 +1,51 @@
+[project]
+name = "Message_AutoSend"
+version = "0.1.0"
+description = ""
+package-mode = false
+authors = [
+    { name = "Alex Shcherbyna", email = "Alex_181173@list.ru" }
+]
+readme = "README.md"
+requires-python = ">=3.13"
+
+# В PEP 621 тут должны быть PEP-508 строки вида "pkg>=x,<y"
+dependencies = [
+    "django>=5.2.7,<6.0.0",
+    "requests>=2.32.5,<3.0.0",
+    "python-dotenv>=1.1.1,<2.0.0",
+    "git-filter-repo>=2.47.0,<3.0.0",
+    "psycopg[binary] (>=3.2,<4)",
+    "django-widget-tweaks (>=1.5.0,<2.0.0)",
+    "booktype (>=1.5,<2.0)",
+    "redis (>=7.0.1,<8.0.0)",
+    "apscheduler (>=3.10,<4.0)",
+    "django-apscheduler (>=0.6,<1.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# Poetry 2 поддерживает dependency groups в PEP 621-проекте
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0,<8.0.0",
+    "psycopg[binary]>=3.2.0,<4.0.0",
+    "pytest>=8.4.2,<9.0.0",
+    "pillow>=11.3.0,<12.0.0"
+]
+lint = [
+    "black>=25.9.0,<26.0.0",
+    "isort>=6.1.0,<7.0.0",
+    "mypy>=1.18.2,<2.0.0",
+    "flake8>=7.3.0,<8.0.0"
+]
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = ["*/migrations/*"]

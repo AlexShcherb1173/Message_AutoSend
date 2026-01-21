@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from django.core.management.base import BaseCommand
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
 
+from clients.models import Recipient
 from mailings.models import Mailing
 from messages_app.models import Message
-from clients.models import Recipient
-from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         # Права на пользователей — смотреть и изменять (для блокировки is_active)
         User = get_user_model()
         user_ct = ContentType.objects.get_for_model(User)
-        user_perm_codes = [("auth", "view_user"), ("auth", "change_user")]
+
         # в кастомной модели пользователя app_label может быть 'users'
         # Добавим безопасно реальные коды:
         for codename in ("view_user", "change_user"):
@@ -58,9 +58,7 @@ class Command(BaseCommand):
                 group.permissions.add(p)
             except Permission.DoesNotExist:
                 self.stdout.write(
-                    self.style.WARNING(
-                        f"Permission {codename} for user model not found"
-                    )
+                    self.style.WARNING(f"Permission {codename} for user model not found")
                 )
 
         # Назначаем кастомные + базовые perms по content_type

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth import get_user_model
@@ -24,17 +25,13 @@ def activate_users(modeladmin, request, queryset):
 @admin.action(description="Деактивировать выбранных пользователей")
 def deactivate_users(modeladmin, request, queryset):
     updated = queryset.update(is_active=False)
-    modeladmin.message_user(
-        request, f"Деактивировано: {updated}", level=messages.WARNING
-    )
+    modeladmin.message_user(request, f"Деактивировано: {updated}", level=messages.WARNING)
 
 
 @admin.action(description="Назначить статус персонала (is_staff=True)")
 def make_staff(modeladmin, request, queryset):
     updated = queryset.update(is_staff=True)
-    modeladmin.message_user(
-        request, f"Назначено staff: {updated}", level=messages.SUCCESS
-    )
+    modeladmin.message_user(request, f"Назначено staff: {updated}", level=messages.SUCCESS)
 
 
 @admin.action(description="Снять статус персонала (is_staff=False)")
@@ -64,9 +61,7 @@ def send_password_reset(modeladmin, request, queryset):
             )
             sent += 1
 
-    modeladmin.message_user(
-        request, f"Отправлено писем: {sent}", level=messages.SUCCESS
-    )
+    modeladmin.message_user(request, f"Отправлено писем: {sent}", level=messages.SUCCESS)
 
 
 @admin.action(description="Экспортировать пользователей в CSV")
@@ -77,9 +72,7 @@ def export_users_csv(modeladmin, request, queryset):
     writer = csv.writer(response, lineterminator="\n")
     writer.writerow(["id", "email", "is_active", "is_staff", "date_joined"])
     for u in queryset.iterator():
-        writer.writerow(
-            [u.pk, smart_str(u.email or ""), u.is_active, u.is_staff, u.date_joined]
-        )
+        writer.writerow([u.pk, smart_str(u.email or ""), u.is_active, u.is_staff, u.date_joined])
     return response
 
 

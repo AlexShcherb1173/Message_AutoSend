@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import uuid
+
 from django.utils.deprecation import MiddlewareMixin
 
-from .request_storage import set_request, clear_request
+from .request_storage import clear_request, set_request
 
 
 class CurrentRequestMiddleware(MiddlewareMixin):
@@ -20,9 +21,7 @@ class CurrentRequestMiddleware(MiddlewareMixin):
 
         user = getattr(request, "user", None)
         request.user_email = (
-            getattr(user, "email", "-")
-            if getattr(user, "is_authenticated", False)
-            else "-"
+            getattr(user, "email", "-") if getattr(user, "is_authenticated", False) else "-"
         )
 
     def process_response(self, request, response):

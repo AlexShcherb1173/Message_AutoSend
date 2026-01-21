@@ -43,9 +43,7 @@ class ClientCacheMixin:
                         if int(last_modified.timestamp()) <= int(ims_ts):
                             not_modified = HttpResponseNotModified()
                             not_modified["Cache-Control"] = response["Cache-Control"]
-                            not_modified["Last-Modified"] = http_date(
-                                last_modified.timestamp()
-                            )
+                            not_modified["Last-Modified"] = http_date(last_modified.timestamp())
                             return not_modified
 
             response["Last-Modified"] = http_date(last_modified.timestamp())

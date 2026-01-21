@@ -13,14 +13,13 @@
 
 После загрузки фикстур выполняется пересчёт статусов у рассылок."""
 
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils import timezone
 
 from clients.models import Recipient
-from messages_app.models import Message
 from mailings.models import Mailing
+from messages_app.models import Message
 
 
 class Command(BaseCommand):
@@ -52,7 +51,7 @@ class Command(BaseCommand):
         call_command("loaddata", "mailings", verbosity=0)
 
         self.stdout.write(self.style.NOTICE("▶ Пересчитываем статусы рассылок..."))
-        now = timezone.now()
+
         updated = 0
         for m in Mailing.objects.all():
             # если модель имеет вычисление статуса — синхронизируем
@@ -61,6 +60,4 @@ class Command(BaseCommand):
             m.save(update_fields=["status", "updated_at"])
             updated += int(status_before != m.status)
 
-        self.stdout.write(
-            self.style.SUCCESS(f"✅ Готово. Обновлено статусов: {updated}.")
-        )
+        self.stdout.write(self.style.SUCCESS(f"✅ Готово. Обновлено статусов: {updated}."))

@@ -33,9 +33,9 @@ Rotate-Logs -dir $LogDir -keepDays $KeepDays
 if (Get-Command poetry -ErrorAction SilentlyContinue) {
   Write-Log "Using Poetry"
   $cmd = "poetry run python manage.py $ManageCmd"
-} elseif (Test-Path ".\.venv\Scripts\python.exe") {
-  $env:Path = (Join-Path $ScriptDir ".\.venv\Scripts") + ";" + $env:Path
-  Write-Log "Using .venv"
+} elseif (Test-Path ".\..venv\Scripts\python.exe") {
+  $env:Path = (Join-Path $ScriptDir ".\..venv\Scripts") + ";" + $env:Path
+  Write-Log "Using ..venv"
   $cmd = "python manage.py $ManageCmd"
 } else {
   Write-Log "Using system Python"
