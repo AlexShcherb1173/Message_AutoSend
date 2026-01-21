@@ -10,18 +10,18 @@ on:
 
 jobs:
   deploy:
-    # Деплоим только если CI завершился успешно
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Upload project via rsync
         uses: burnett01/rsync-deployments@7.0.2
         with:
-          switches: -avzr --delete --exclude=".git" --exclude=".venv" --exclude="__pycache__" --exclude=".pytest_cache"
+          switches: -avzr --delete \
+            --exclude=".git" \
+            --exclude=".venv" \
+            --exclude="__pycache__" \
+            --exclude=".pytest_cache"
           path: ./
           remote_path: ${{ secrets.DEPLOY_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}
@@ -38,12 +38,27 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "=== SERVER INFO ==="
+            hostname
+            whoami
+
+            echo "=== DEPLOY_PATH ==="
+            echo "${{ secrets.DEPLOY_PATH }}"
+
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            echo "=== CURRENT DIR ==="
+            pwd
+            ls -la
 
             if [ ! -f .env ]; then
-              echo ".env not found in deploy path. Create it from .env.example and try again."
+              echo "❌ .env not found!"
               exit 1
             fi
+
+            echo "✅ .env found"
+            ls -la .env docker-compose.prod.yml
 
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml ps
