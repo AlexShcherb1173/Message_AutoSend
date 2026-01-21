@@ -3,25 +3,26 @@ name: deploy
 on:
   workflow_run:
     workflows: ["ci"]
-    types:
-      - completed
+    types: [completed]
 
   workflow_dispatch:
 
 jobs:
   deploy:
-    # Деплоим только если CI завершился успешно
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout не нужен для rsync-deployments, но оставим, чтобы не было сюрпризов
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Upload project via rsync
-        uses: burnett01/rsync-deployments@7.0.2
+        uses: burnett01/rsync-deployments@v8
         with:
-          switches: -avzr --delete --exclude=".git" --exclude=".venv" --exclude="__pycache__" --exclude=".pytest_cache"
+          # ВАЖНО: одной строкой, без "\" переносов
+          # ВАЖНО: исключаем .env, чтобы rsync никогда не удалил серверный файл
+          switches: -avzr --exclude=.env --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache
           path: ./
           remote_path: ${{ secrets.DEPLOY_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}
@@ -38,12 +39,24 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "NEW DEPLOY SCRIPT v4"
+            echo "HOST=$(hostname)"
+            echo "USER=$(whoami)"
+            echo "DEPLOY_PATH=${{ secrets.DEPLOY_PATH }}"
+
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            echo "PWD=$(pwd)"
+            ls -la
 
             if [ ! -f .env ]; then
-              echo ".env not found in deploy path. Create it from .env.example and try again."
+              echo "❌ .env not found!"
               exit 1
             fi
+
+            echo "✅ .env found"
+            ls -la .env docker-compose.prod.yml
 
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml ps
