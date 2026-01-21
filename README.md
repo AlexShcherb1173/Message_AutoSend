@@ -236,7 +236,6 @@ tick_send_due_mailings.ps1 — однократный «тик»: принуди
 
 .\scripts\tick_send_due_mailings.ps1
 
-
 Если файл лога «занят другим процессом» — значит запущен ещё один экземпляр. Остановите старый через stop_scheduler.ps1.
 
 Batch (cmd)
